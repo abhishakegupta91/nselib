@@ -1,164 +1,284 @@
-# NSElib 2.4.3
+<p align="center">
+  <h1 align="center">nselib</h1>
+  <p align="center">
+    A Python library to fetch publicly available data from <a href="https://www.nseindia.com">NSE India</a>.
+  </p>
+</p>
 
-Python Library to get publicly available data on new NSE india website.
+<p align="center">
+  <a href="https://pypi.org/project/nselib/"><img src="https://img.shields.io/pypi/v/nselib?color=blue" alt="PyPI Version"></a>
+  <a href="https://pypi.org/project/nselib/"><img src="https://img.shields.io/pypi/pyversions/nselib" alt="Python Versions"></a>
+  <a href="https://github.com/RuchiTanmay/nselib/blob/main/LICENSE"><img src="https://img.shields.io/github/license/RuchiTanmay/nselib" alt="License"></a>
+  <a href="https://pypi.org/project/nselib/"><img src="https://img.shields.io/pypi/dm/nselib?color=green" alt="Downloads"></a>
+</p>
 
-Release Notes
-* Compatible and Tested with Python 3.8 and above 
-* Future release will be done on requirement basic
+---
 
-## Libraries Required
-- requests
-- beautifulsoup
-- numpy 
-- scipy
-- pandas
-- lxml
-- pandas_market_calendars
+## ✨ Features
 
-For Windows systems you can install Anaconda, this will cover many dependencies (You'll have to install requests and beautifulsoup additionally though)
+- **Capital Market** — Price volume data, deliverable positions, bhav copies, bulk/block deals, short selling, VaR margins, PE ratios, 52-week highs/lows, and more
+- **Derivatives** — Futures & options price volume data, bhav copies, participant-wise OI & volume, live option chains, FII statistics, ban period securities
+- **Indices** — Index constituent lists, live index performances across Broad Market, Sectoral, Thematic, and Strategy categories
+- **Debt** — Securities available for trading
+- **Corporate Filings** — Financial results, corporate actions, event calendars
+- **Market Activity** — Top gainers/losers, most active equities, total traded stocks, FII/DII activity
+- **Utilities** — Trading holiday calendar, India VIX historical data
 
-## Installation
-Fresh installation 
+## 📦 Installation
 
-```$pip install nselib```
+**Fresh install:**
 
-Upgrade
+```bash
+pip install nselib
+```
 
-```$pip install nselib --upgrade```
+**Upgrade to latest:**
 
-## Function list
+```bash
+pip install nselib --upgrade
+```
 
-### nselib
-* trading_holiday_calendar
+> **Note:** Compatible and tested with Python 3.8 and above.
 
-Example :
+## 🚀 Quick Start
 
-import nselib
+```python
+from nselib import capital_market
 
-data = nselib.trading_holiday_calendar()
+# Get price volume data for a stock (last 1 month)
+df = capital_market.price_volume_data(symbol='SBIN', period='1M')
+print(df.head())
+
+# Or specify a custom date range
+df = capital_market.price_volume_and_deliverable_position_data(
+    symbol='SBIN',
+    from_date='01-01-2024',
+    to_date='31-01-2024'
+)
+print(df)
+```
+
+## 📖 API Reference
+
+### Date Parameters
+
+Most functions accept dates in two ways:
+
+| Parameter | Format | Example |
+|---|---|---|
+| `from_date` / `to_date` | `dd-mm-YYYY` | `'01-06-2024'` |
+| `period` | Shorthand code | `'1D'`, `'1W'`, `'1M'`, `'6M'`, `'1Y'` |
+
+> You must provide **either** `from_date` + `to_date` **or** `period`, not both.
+
+---
 
 ### Capital Market
-* price_volume_and_deliverable_position_data 
-* price_volume_data
-* deliverable_position_data
-* bulk_deal_data
-* block_deals_data
-* short_selling_data
-* bhav_copy_with_delivery
-* bhav_copy_equities
-* equity_list
-* fno_equity_list
-* fno_index_list
-* nifty50_equity_list
-* niftynext50_equity_list
-* niftymidcap150_equity_list
-* niftysmallcap250_equity_list
-* india_vix_data
-* index_data
-* market_watch_all_indices
-* fii_dii_trading_activity
-* var_begin_day
-* var_1st_intra_day
-* var_2nd_intra_day
-* var_3rd_intra_day
-* var_4th_intra_day
-* var_end_of_day
-* sme_bhav_copy
-* sme_band_complete
-* week_52_high_low_report
-* financial_results_for_equity
-* corporate_bond_trade_report
-* bhav_copy_sme
-* pe_ratio
-* corporate_actions_for_equity
-* event_calendar_for_equity
-* top_gainers_or_losers
-* most_active_equities
-* total_traded_stocks
 
-Example : 
+```python
+from nselib import capital_market
+```
 
-from nselib import capital_market 
+| Function | Description | Key Parameters |
+|---|---|---|
+| `price_volume_and_deliverable_position_data()` | OHLCV + delivery data | `symbol`, `from_date`/`to_date` or `period` |
+| `price_volume_data()` | OHLCV price volume data | `symbol`, `from_date`/`to_date` or `period` |
+| `deliverable_position_data()` | Delivery position data | `symbol`, `from_date`/`to_date` or `period` |
+| `bulk_deal_data()` | Bulk deal transactions | `from_date`/`to_date` or `period` |
+| `block_deals_data()` | Block deal transactions | `from_date`/`to_date` or `period` |
+| `short_selling_data()` | Short selling reports | `from_date`/`to_date` or `period` |
+| `bhav_copy_with_delivery()` | Daily bhav copy with delivery | `trade_date` |
+| `bhav_copy_equities()` | CM-UDiFF bhav copy | `trade_date` |
+| `bhav_copy_sme()` | SME bhav copy | `trade_date` |
+| `equity_list()` | All listed equities | — |
+| `fno_equity_list()` | F&O equity list with lot sizes | — |
+| `fno_index_list()` | F&O index list with lot sizes | — |
+| `nifty50_equity_list()` | Nifty 50 constituents | — |
+| `niftynext50_equity_list()` | Nifty Next 50 constituents | — |
+| `niftymidcap150_equity_list()` | Nifty Midcap 150 constituents | — |
+| `niftysmallcap250_equity_list()` | Nifty Smallcap 250 constituents | — |
+| `india_vix_data()` | India VIX historical data | `from_date`/`to_date` or `period` |
+| `index_data()` | Historical index OHLC data | `index`, `from_date`/`to_date` or `period` |
+| `market_watch_all_indices()` | Live snapshot of all indices | — |
+| `fii_dii_trading_activity()` | FII/DII buy-sell activity | — |
+| `var_begin_day()` | VaR — begin of day | `trade_date` |
+| `var_1st_intra_day()` | VaR — 1st intraday | `trade_date` |
+| `var_2nd_intra_day()` | VaR — 2nd intraday | `trade_date` |
+| `var_3rd_intra_day()` | VaR — 3rd intraday | `trade_date` |
+| `var_4th_intra_day()` | VaR — 4th intraday | `trade_date` |
+| `var_end_of_day()` | VaR — end of day | `trade_date` |
+| `sme_bhav_copy()` | SME bhav copy | `trade_date` |
+| `sme_band_complete()` | SME band complete data | `trade_date` |
+| `week_52_high_low_report()` | 52-week high/low report | `trade_date` |
+| `financial_results_for_equity()` | Quarterly/annual financials | `from_date`/`to_date` or `period`, `fin_period`, `fo_sec` |
+| `corporate_bond_trade_report()` | Corporate bond trades | `trade_date` |
+| `pe_ratio()` | PE ratio for all equities | `trade_date` |
+| `corporate_actions_for_equity()` | Corporate actions | `from_date`/`to_date` or `period`, `fno_only` |
+| `event_calendar_for_equity()` | Event calendar | `from_date`/`to_date` or `period`, `fno_only` |
+| `top_gainers_or_losers()` | Top gainers or losers | `to_get` (`'gainers'` / `'loosers'`) |
+| `most_active_equities()` | Most active by value/volume | `fetch_by` (`'value'` / `'volume'`) |
+| `total_traded_stocks()` | All traded stocks summary | — |
 
-data = capital_market.price_volume_and_deliverable_position_data(symbol='SBIN', from_date='20-06-2023', to_date='20-07-2023')
-                                            
-OR
+**Examples:**
 
-data = capital_market.price_volume_and_deliverable_position_data(symbol='SBIN', period='1M')
+```python
+# Bhav copy for a specific date
+df = capital_market.bhav_copy_with_delivery(trade_date='20-06-2024')
 
-data = capital_market.bhav_copy_with_delivery(trade_date='20-06-2024')
+# India VIX for last 1 week
+df = capital_market.india_vix_data(period='1W')
 
-More functions will be available in future releases...
+# Historical index data
+df = capital_market.index_data(index='NIFTY 50', from_date='01-01-2024', to_date='31-03-2024')
 
-### Derivative
-* future_price_volume_data
-* option_price_volume_data
-* fno_bhav_copy
-* participant_wise_open_interest
-* participant_wise_trading_volume
-* expiry_dates_future
-* expiry_dates_option_index
-* nse_live_option_chain
-* fii_derivatives_statistics
-* fno_security_in_ban_period
-* live_most_active_underlying
+# Financial results (quarterly, F&O securities only)
+df = capital_market.financial_results_for_equity(period='6M', fo_sec=True, fin_period='Quarterly')
 
-Example : 
+# Top gainers in live market
+df = capital_market.top_gainers_or_losers('gainers')
+```
 
+---
+
+### Derivatives
+
+```python
 from nselib import derivatives
+```
 
-data = derivatives.future_price_volume_data(symbol='SBIN', instrument='FUTSTK', from_date='20-06-2023', to_date='20-07-2023')
+| Function | Description | Key Parameters |
+|---|---|---|
+| `future_price_volume_data()` | Futures price & volume | `symbol`, `instrument` (`FUTIDX`/`FUTSTK`), dates |
+| `option_price_volume_data()` | Options price & volume | `symbol`, `instrument` (`OPTIDX`/`OPTSTK`), `option_type` (`PE`/`CE`), dates |
+| `fno_bhav_copy()` | F&O daily bhav copy | `trade_date` |
+| `participant_wise_open_interest()` | OI by participant category | `trade_date` |
+| `participant_wise_trading_volume()` | Volume by participant category | `trade_date` |
+| `expiry_dates_future()` | Upcoming futures expiry dates | — |
+| `expiry_dates_option_index()` | Upcoming options expiry dates | — |
+| `nse_live_option_chain()` | Live option chain | `symbol`, `expiry_date` (optional), `oi_mode` |
+| `fii_derivatives_statistics()` | FII derivatives stats | `trade_date` |
+| `fno_security_in_ban_period()` | Securities in F&O ban | `trade_date` |
+| `live_most_active_underlying()` | Most active underlyings | — |
 
-OR
+**Instrument Types:**
 
-data = derivatives.price_volume_and_deliverable_position_data(symbol='BANKNIFTY', instrument='FUTIDX', period='1M')
+| Code | Description |
+|---|---|
+| `FUTIDX` | Future Index |
+| `FUTSTK` | Future Stock |
+| `OPTIDX` | Option Index |
+| `OPTSTK` | Option Stock |
 
-Note: instrument type ( future index = FUTIDX, future stocks = FUTSTK, option index = OPTIDX, option stocks = OPTSTK)
+**Examples:**
 
-More functions will be available in future releases...
+```python
+# Futures price data
+df = derivatives.future_price_volume_data(
+    symbol='SBIN', instrument='FUTSTK', period='1M'
+)
+
+# Live option chain
+df = derivatives.nse_live_option_chain(symbol='BANKNIFTY', expiry_date='27-03-2025')
+
+# Compact option chain (fewer columns)
+df = derivatives.nse_live_option_chain(symbol='NIFTY', oi_mode='compact')
+
+# FII derivatives statistics
+df = derivatives.fii_derivatives_statistics(trade_date='20-12-2025')
+```
+
+---
 
 ### Indices
-* index_list
-* constituent_stock_list
-* live_index_performances
 
-Example :
-
+```python
 from nselib import indices
+```
 
-data = indices.constituent_stock_list(index_category='BroadMarketIndices', index_name='Nifty 50')
+| Function | Description | Key Parameters |
+|---|---|---|
+| `index_list()` | Available indices by category | `index_category` |
+| `constituent_stock_list()` | Stocks in a given index | `index_category`, `index_name` |
+| `live_index_performances()` | Live performance of all indices | — |
 
-More functions will be available in future releases...
+**Index Categories:** `BroadMarketIndices`, `SectoralIndices`, `ThematicIndices`, `StrategyIndices`
+
+**Examples:**
+
+```python
+# List all broad market indices
+index_names = indices.index_list(index_category='BroadMarketIndices')
+
+# Get Nifty 50 constituents
+df = indices.constituent_stock_list(index_category='BroadMarketIndices', index_name='Nifty 50')
+
+# Live index performances
+df = indices.live_index_performances()
+```
+
+---
 
 ### Debt
-* securities_available_for_trading
 
-Example : 
-
+```python
 from nselib import debt
+```
 
-data = debt.securities_available_for_trading(trade_date='20-12-2025')
+| Function | Description | Key Parameters |
+|---|---|---|
+| `securities_available_for_trading()` | Debt securities available | `trade_date` |
 
-More functions will be available in future releases...
+**Example:**
 
+```python
+df = debt.securities_available_for_trading(trade_date='20-12-2025')
+```
 
-## How can I contribute?
-There are multiple ways in which you can contribute-
+---
 
-### Write about your project
+### Utilities
 
-There are working on to add many function to this library. NSElib at the moment is short of good documentation. There are a lot of features in NSElib yet to come :( , so till we complete the documentation, I'll need support from the community.
+```python
+import nselib
+```
 
-Please write about your projects in blogs, quora answers and other forums, so that people find working examples to get started.
+| Function | Description |
+|---|---|
+| `trading_holiday_calendar()` | NSE trading holidays for all segments |
 
-### Raising issues, bugs, enhancement requests
+**Example:**
 
-For quick resolution please raise issues both [here on issue page](https://github.com/RuchiTanmay/nselib/issues). I'll try my best to address the issues quickly on github as and when I get notified, but raising it on stackoverflow will provide you access to a larger group and someone else might solve your problem before I do.
+```python
+df = nselib.trading_holiday_calendar()
+```
 
-### Contact author on [LinkedIn](https://www.linkedin.com/in/ruchi-tanmay-61848219)
+---
 
-### Submit patches
+## 🤝 How to Contribute
 
-If you have fixed an issue or added a new feature, please fork this repository, make your changes and submit a pull request. [Here's good article on how to do this.](https://code.tutsplus.com/tutorials/how-to-collaborate-on-github--net-34267) 
+There are multiple ways to contribute to nselib:
 
-Looking forward for healthy participation from community.
+### Report Issues & Suggest Features
+
+Found a bug or have a feature request? Please open an issue on the [GitHub Issues page](https://github.com/RuchiTanmay/nselib/issues).
+
+### Submit Pull Requests
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Commit your changes (`git commit -m 'Add your feature'`)
+4. Push to the branch (`git push origin feature/your-feature`)
+5. Open a Pull Request
+
+### Write About nselib
+
+Help the community by writing tutorials, blog posts, or example projects using nselib.
+
+### Contact
+
+- **Original Author:** [Ruchi Tanmay](https://www.linkedin.com/in/ruchi-tanmay-61848219)
+- **GitHub:** [RuchiTanmay/nselib](https://github.com/RuchiTanmay/nselib)
+
+## 📄 License
+
+This project is licensed under the Apache License 2.0 — see the [LICENSE](LICENSE) file for details.
