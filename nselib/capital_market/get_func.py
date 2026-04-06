@@ -1,7 +1,16 @@
-from io import BytesIO, StringIO
 import json
-from nselib.libutil import *
-from nselib.constants import *
+from io import BytesIO, StringIO
+
+import pandas as pd
+
+from nselib.constants import india_vix_data_column, index_data_columns
+from nselib.libutil import (
+    NSEdataNotFound,
+    cleaning_column_name,
+    derive_from_and_to_date,
+    nse_urlfetch,
+    validate_date_param,
+)
 
 
 def get_price_volume_and_deliverable_position_data(symbol: str, from_date: str, to_date: str):
@@ -12,7 +21,7 @@ def get_price_volume_and_deliverable_position_data(symbol: str, from_date: str, 
         data_text = nse_urlfetch(url + payload, origin_url=origin_url).text
         data_text = data_text.replace('\x82', '').replace('â¹', 'In Rs')
     except Exception as e:
-        raise NSEdataNotFound(f" Resource not available MSG: {e}")
+        raise NSEdataNotFound(f"Resource not available: {e}") from e
     data_df = pd.read_csv(StringIO(data_text))
     data_df.columns = [name.replace(' ', '') for name in data_df.columns]
     return data_df
@@ -25,9 +34,9 @@ def get_price_volume_data(symbol: str, from_date: str, to_date: str):
     try:
         data_text = nse_urlfetch(url + payload, origin_url=origin_url)
         if data_text.status_code != 200:
-            raise NSEdataNotFound(f" Resource not available for Price Volume Data")
+            raise NSEdataNotFound("Resource not available for Price Volume Data")
     except Exception as e:
-        raise NSEdataNotFound(f" Resource not available MSG: {e}")
+        raise NSEdataNotFound(f"Resource not available: {e}") from e
     data_df = pd.read_csv(BytesIO(data_text.content), index_col=False)
     data_df.columns = [name.replace(' ', '') for name in data_df.columns]
     return data_df
@@ -40,9 +49,9 @@ def get_deliverable_position_data(symbol: str, from_date: str, to_date: str):
     try:
         data_text = nse_urlfetch(url + payload, origin_url=origin_url)
         if data_text.status_code != 200:
-            raise NSEdataNotFound(f" Resource not available for deliverable_position_data")
+            raise NSEdataNotFound("Resource not available for deliverable position data")
     except Exception as e:
-        raise NSEdataNotFound(f" Resource not available MSG: {e}")
+        raise NSEdataNotFound(f"Resource not available: {e}") from e
     data_df = pd.read_csv(BytesIO(data_text.content), index_col=False)
     data_df.columns = [name.replace(' ', '') for name in data_df.columns]
     return data_df
@@ -55,8 +64,7 @@ def get_india_vix_data(from_date: str, to_date: str):
         data_json = nse_urlfetch(url, origin_url=origin_url).json()
         data_df = pd.DataFrame(data_json['data'])
     except Exception as e:
-        raise NSEdataNotFound(f" Resource not available MSG: {e}")
-    # data_df.drop(columns='TIMESTAMP', inplace=True)
+        raise NSEdataNotFound(f"Resource not available: {e}") from e
     data_df.columns = cleaning_column_name(data_df.columns)
     return data_df[india_vix_data_column]
 
@@ -69,53 +77,55 @@ def get_index_data(index: str, from_date: str, to_date: str):
         data_json = nse_urlfetch(url, origin_url=origin_url).json()
         data_df = pd.DataFrame(data_json['data'])
     except Exception as e:
-        raise NSEdataNotFound(f" Resource not available MSG: {e}")
+        raise NSEdataNotFound(f"Resource not available: {e}") from e
     data_df.drop(columns='HI_TIMESTAMP', inplace=True)
     data_df.columns = index_data_columns
     return data_df
 
 
 def get_bulk_deal_data(from_date: str, to_date: str):
-    # print(from_date, to_date)
     origin_url = "https://nsewebsite-staging.nseindia.com"
     url = "https://www.nseindia.com/api/historicalOR/bulk-block-short-deals?optionType=bulk_deals&"
     payload = f"from={from_date}&to={to_date}&csv=true"
-    # print(url + payload)
     data_text = nse_urlfetch(url + payload, origin_url=origin_url)
     if data_text.status_code != 200:
-        raise NSEdataNotFound(f" Resource not available for bulk_deal_data")
+        raise NSEdataNotFound("Resource not available for bulk deal data")
     data_df = pd.read_csv(BytesIO(data_text.content), index_col=False)
     data_df.columns = [name.replace(' ', '') for name in data_df.columns]
     return data_df
 
 
 def get_block_deals_data(from_date: str, to_date: str):
-    # print(from_date, to_date)
     origin_url = "https://nsewebsite-staging.nseindia.com"
     url = "https://www.nseindia.com/api/historicalOR/bulk-block-short-deals?optionType=block_deals&"
     payload = f"from={from_date}&to={to_date}&csv=true"
     data_text = nse_urlfetch(url + payload, origin_url=origin_url)
     if data_text.status_code != 200:
-        raise NSEdataNotFound(f" Resource not available for block_deals_data")
+        raise NSEdataNotFound("Resource not available for block deals data")
     data_df = pd.read_csv(BytesIO(data_text.content), index_col=False)
     data_df.columns = [name.replace(' ', '') for name in data_df.columns]
     return data_df
 
 
 def get_short_selling_data(from_date: str, to_date: str):
+    """Fetch NSE short selling data as a DataFrame.
+
+    Args:
+        from_date: Start date in 'dd-mm-YYYY' format.
+        to_date: End date in 'dd-mm-YYYY' format.
+
+    Returns:
+        DataFrame containing short selling data.
+
+    Raises:
+        NSEdataNotFound: If NSE returns a non-200 status.
     """
-    NSE short selling data in data frame
-    :param from_date:
-    :param to_date:
-    :return:
-    """
-    # print(from_date, to_date)
     origin_url = "https://nsewebsite-staging.nseindia.com"
     url = "https://www.nseindia.com/api/historicalOR/bulk-block-short-deals?optionType=short_selling&"
     payload = f"from={from_date}&to={to_date}&csv=true"
-    data_text = nse_urlfetch(url + payload,origin_url=origin_url)
+    data_text = nse_urlfetch(url + payload, origin_url=origin_url)
     if data_text.status_code != 200:
-        raise NSEdataNotFound(f" Resource not available for short_selling_data")
+        raise NSEdataNotFound("Resource not available for short selling data")
     data_df = pd.read_csv(BytesIO(data_text.content), index_col=False)
     data_df.columns = [name.replace(' ', '') for name in data_df.columns]
     return data_df
@@ -136,7 +146,7 @@ def get_financial_results_master(from_date: str = None,
         payload = f'from_date={from_date}&to_date={to_date}&period={fin_period}'
     data_text = nse_urlfetch(url_ + payload, origin_url=origin_url)
     if data_text.status_code != 200:
-        raise NSEdataNotFound(f" Resource not available for financial data with these parameters")
+        raise NSEdataNotFound("Resource not available for financial data with these parameters")
     json_str = data_text.content.decode("utf-8")
     data_list = json.loads(json_str)
     master_data_df = pd.DataFrame(data_list)
@@ -201,5 +211,5 @@ def get_top_gainers_or_losers(to_get: str):
     try:
         data_json = nse_urlfetch(url, origin_url=origin_url).json()
     except Exception as e:
-        raise NSEdataNotFound(f" Resource not available MSG: {e}")
+        raise NSEdataNotFound(f"Resource not available: {e}") from e
     return data_json

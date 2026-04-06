@@ -1,7 +1,46 @@
 import datetime as dt
+import json
 import zipfile
 import xml.etree.ElementTree as ET
-from nselib.capital_market.get_func import *
+from datetime import datetime
+from io import BytesIO
+
+import pandas as pd
+import requests
+
+from nselib.constants import (
+    block_deals_data_columns,
+    bulk_deal_data_columns,
+    dd_mm_yyyy,
+    ddmmyy,
+    ddmmyyyy,
+    deliverable_data_columns,
+    india_vix_data_column,
+    price_volume_and_deliverable_position_data_columns,
+    price_volume_data_columns,
+    short_selling_data_columns,
+    var_columns,
+)
+from nselib.libutil import (
+    NSEdataNotFound,
+    cleaning_nse_symbol,
+    derive_from_and_to_date,
+    nse_urlfetch,
+    validate_date_param,
+    validate_param_from_list,
+)
+from nselib.capital_market.get_func import (
+    get_block_deals_data,
+    get_bulk_deal_data,
+    get_deliverable_position_data,
+    get_financial_results_master,
+    get_india_vix_data,
+    get_index_data,
+    get_price_volume_and_deliverable_position_data,
+    get_price_volume_data,
+    get_short_selling_data,
+    get_top_gainers_or_losers,
+)
 
 
 # logging.basicConfig(level=logging.DEBUG)
@@ -315,7 +354,7 @@ def bhav_copy_with_delivery(trade_date: str):
     if request_bhav.status_code == 200:
         bhav_df = pd.read_csv(BytesIO(request_bhav.content))
     else:
-        raise FileNotFoundError(f' Data not found, change the trade_date...')
+        raise FileNotFoundError('Data not found, change the trade_date')
     bhav_df.columns = [name.replace(' ', '') for name in bhav_df.columns]
     bhav_df['SERIES'] = bhav_df['SERIES'].str.replace(' ', '')
     bhav_df['DATE1'] = bhav_df['DATE1'].str.replace(' ', '')
@@ -339,7 +378,7 @@ def bhav_copy_equities(trade_date: str):
             if file_name:
                 bhav_df = pd.read_csv(zip_bhav.open(file_name))
     elif request_bhav.status_code == 403:
-        raise FileNotFoundError(f' Data not found, change the trade_date...')
+        raise FileNotFoundError('Data not found, change the trade_date')
     # bhav_df = bhav_df[['SYMBOL', 'SERIES', 'OPEN', 'HIGH', 'LOW', 'CLOSE', 'LAST', 'PREVCLOSE', 'TOTTRDQTY',
     #                    'TOTTRDVAL', 'TIMESTAMP', 'TOTALTRADES']]
     return bhav_df
@@ -376,7 +415,7 @@ def bhav_copy_sme(trade_date: str):
     if request_bhav.status_code == 200:
         bhav_df = pd.read_csv(BytesIO(request_bhav.content))
     else:
-        raise FileNotFoundError(f' Data not found, change the trade_date...')
+        raise FileNotFoundError('Data not found, change the trade_date')
     bhav_df.columns = [name.replace(' ', '') for name in bhav_df.columns]
     return bhav_df
 
@@ -390,7 +429,7 @@ def equity_list():
     url = "https://archives.nseindia.com/content/equities/EQUITY_L.csv"
     file_chk = nse_urlfetch(url, origin_url=origin_url)
     if file_chk.status_code != 200:
-        raise FileNotFoundError(f" No data equity list available")
+        raise FileNotFoundError("No data equity list available")
     try:
         data_df = pd.read_csv(BytesIO(file_chk.content))
     except Exception as e:
@@ -408,7 +447,7 @@ def fno_equity_list():
     url = "https://www.nseindia.com/api/underlying-information"
     data_obj = nse_urlfetch(url, origin_url=origin_url)
     if data_obj.status_code != 200:
-        raise NSEdataNotFound(f" Resource not available for fno_equity_list")
+        raise NSEdataNotFound("Resource not available for fno_equity_list")
     data_dict = data_obj.json()
     data_df = pd.DataFrame(data_dict['data']['UnderlyingList'])
     return data_df
@@ -423,7 +462,7 @@ def fno_index_list():
     url = "https://www.nseindia.com/api/underlying-information"
     data_obj = nse_urlfetch(url, origin_url=origin_url)
     if data_obj.status_code != 200:
-        raise NSEdataNotFound(f" Resource not available for fno_equity_index_list")
+        raise NSEdataNotFound("Resource not available for fno_equity_index_list")
     data_dict = data_obj.json()
     data_df = pd.DataFrame(data_dict['data']['IndexList'])
     return data_df
@@ -437,7 +476,7 @@ def nifty50_equity_list():
     url = "https://nsearchives.nseindia.com/content/indices/ind_nifty50list.csv"
     file_chk = nse_urlfetch(url)
     if file_chk.status_code != 200:
-        raise FileNotFoundError(f" No data equity list available")
+        raise FileNotFoundError("No data equity list available")
     try:
         data_df = pd.read_csv(BytesIO(file_chk.content))
     except Exception as e:
@@ -494,7 +533,6 @@ def market_watch_all_indices():
     url = "https://www.nseindia.com/api/allIndices"
     data_json = nse_urlfetch(url, origin_url=origin_url).json()
     data_df = pd.DataFrame(data_json['data'])
-    print(data_df.columns)
     return data_df[['key', 'index', 'indexSymbol', 'last', 'variation', 'percentChange', 'open', 'high', 'low',
                     'previousClose', 'yearHigh', 'yearLow', 'pe', 'pb', 'dy', 'declines', 'advances', 'unchanged',
                     'perChange365d', 'perChange30d', 'previousDay', 'oneWeekAgoVal', 'oneMonthAgoVal', 'oneYearAgoVal']]
@@ -524,7 +562,7 @@ def var_begin_day(trade_date: str):
     if request_nse.status_code == 200:
         var_df = pd.read_csv(BytesIO(request_nse.content), skiprows=1)
     else:
-        raise FileNotFoundError(f' Data not found, change the trade_date...')
+        raise FileNotFoundError('Data not found, change the trade_date')
     var_df.columns = var_columns
     return var_df
 
@@ -542,7 +580,7 @@ def var_1st_intra_day(trade_date: str):
     if request_nse.status_code == 200:
         var_df = pd.read_csv(BytesIO(request_nse.content), skiprows=1)
     else:
-        raise FileNotFoundError(f' Data not found, change the trade_date...')
+        raise FileNotFoundError('Data not found, change the trade_date')
     var_df.columns = var_columns
     return var_df
 
@@ -560,7 +598,7 @@ def var_2nd_intra_day(trade_date: str):
     if request_nse.status_code == 200:
         var_df = pd.read_csv(BytesIO(request_nse.content), skiprows=1)
     else:
-        raise FileNotFoundError(f' Data not found, change the trade_date...')
+        raise FileNotFoundError('Data not found, change the trade_date')
     var_df.columns = var_columns
     return var_df
 
@@ -578,7 +616,7 @@ def var_3rd_intra_day(trade_date: str):
     if request_nse.status_code == 200:
         var_df = pd.read_csv(BytesIO(request_nse.content), skiprows=1)
     else:
-        raise FileNotFoundError(f' Data not found, change the trade_date...')
+        raise FileNotFoundError('Data not found, change the trade_date')
     var_df.columns = var_columns
     return var_df
 
@@ -596,7 +634,7 @@ def var_4th_intra_day(trade_date: str):
     if request_nse.status_code == 200:
         var_df = pd.read_csv(BytesIO(request_nse.content), skiprows=1)
     else:
-        raise FileNotFoundError(f' Data not found, change the trade_date...')
+        raise FileNotFoundError('Data not found, change the trade_date')
     var_df.columns = var_columns
     return var_df
 
@@ -614,7 +652,7 @@ def var_end_of_day(trade_date: str):
     if request_nse.status_code == 200:
         var_df = pd.read_csv(BytesIO(request_nse.content), skiprows=1)
     else:
-        raise FileNotFoundError(f' Data not found, change the trade_date...')
+        raise FileNotFoundError('Data not found, change the trade_date')
     var_df.columns = var_columns
     return var_df
 
@@ -632,7 +670,7 @@ def sme_bhav_copy(trade_date: str):
     if request_bhav.status_code == 200:
         bhav_df = pd.read_csv(BytesIO(request_bhav.content))
     else:
-        raise FileNotFoundError(f' Data not found, change the trade_date...')
+        raise FileNotFoundError('Data not found, change the trade_date')
     bhav_df.columns = [name.replace(' ', '') for name in bhav_df.columns]
     return bhav_df
 
@@ -650,7 +688,7 @@ def sme_band_complete(trade_date: str):
     if request_sme.status_code == 200:
         sme_df = pd.read_csv(BytesIO(request_sme.content))
     else:
-        raise FileNotFoundError(f' Data not found, change the trade_date...')
+        raise FileNotFoundError('Data not found, change the trade_date')
     sme_df.columns = [name.replace(' ', '') for name in sme_df.columns]
     return sme_df
 
@@ -668,7 +706,7 @@ def week_52_high_low_report(trade_date: str):
     if request_nse.status_code == 200:
         high_low_df = pd.read_csv(BytesIO(request_nse.content), skiprows=2)
     else:
-        raise FileNotFoundError(f' Data not found, change the trade_date...')
+        raise FileNotFoundError('Data not found, change the trade_date')
     high_low_df.columns = [name.replace(' ', '') for name in high_low_df.columns]
     return high_low_df
 
@@ -741,7 +779,7 @@ def corporate_bond_trade_report(trade_date: str):
     if request_bhav.status_code == 200:
         bond_df = pd.read_csv(BytesIO(request_bhav.content))
     else:
-        raise FileNotFoundError(f' Data not found, change the trade_date...')
+        raise FileNotFoundError('Data not found, change the trade_date')
     bond_df.columns = [name.replace(' ', '') for name in bond_df.columns]
     bond_df['SERIES'] = bond_df['SERIES'].str.replace(' ', '')
     return bond_df
@@ -760,7 +798,7 @@ def pe_ratio(trade_date: str):
     if request_bhav.status_code == 200:
         pe_df = pd.read_csv(BytesIO(request_bhav.content))
     else:
-        raise FileNotFoundError(f' Data not found, change the trade_date...')
+        raise FileNotFoundError('Data not found, change the trade_date')
     pe_df.columns = [name.replace(' ', '') for name in pe_df.columns]
     return pe_df
 
@@ -794,7 +832,7 @@ def corporate_actions_for_equity(from_date: str = None,
         payload = f'from_date={from_date}&to_date={to_date}'
     data_text = nse_urlfetch(url_ + payload, origin_url=origin_url)
     if data_text.status_code != 200:
-        raise NSEdataNotFound(f" Resource not available for financial data with these parameters")
+        raise NSEdataNotFound("Resource not available for financial data with these parameters")
     json_str = data_text.content.decode("utf-8")
     data_list = json.loads(json_str)
     master_data_df = pd.DataFrame(data_list)
@@ -831,7 +869,7 @@ def event_calendar_for_equity(from_date: str = None,
         payload = f'from_date={from_date}&to_date={to_date}'
     data_text = nse_urlfetch(url_ + payload, origin_url=origin_url)
     if data_text.status_code != 200:
-        raise NSEdataNotFound(f" Resource not available for financial data with these parameters")
+        raise NSEdataNotFound("Resource not available for financial data with these parameters")
     json_str = data_text.content.decode("utf-8")
     data_list = json.loads(json_str)
     master_data_df = pd.DataFrame(data_list)
@@ -876,7 +914,7 @@ def most_active_equities(fetch_by: str = 'value'):
         data_json = nse_urlfetch(url, origin_url=origin_url).json()
         data_df = pd.DataFrame(data_json['data'])
     except Exception as e:
-        raise NSEdataNotFound(f" Resource not available MSG: {e}")
+        raise NSEdataNotFound(f"Resource not available: {e}") from e
     return data_df
 
 
@@ -889,44 +927,11 @@ def total_traded_stocks():
     :return: summary_dict, detail_df
     """
     origin_url = "https://www.nseindia.com/market-data/stocks-traded"
-    url = f"https://www.nseindia.com/api/live-analysis-stocksTraded"
+    url = "https://www.nseindia.com/api/live-analysis-stocksTraded"
     try:
         data_json = nse_urlfetch(url, origin_url=origin_url).json()
         summary_dict = data_json['total']['count']
         detail_df = pd.DataFrame(data_json['total']['data'])
     except Exception as e:
-        raise NSEdataNotFound(f" Resource not available MSG: {e}")
+        raise NSEdataNotFound(f"Resource not available: {e}") from e
     return summary_dict, detail_df
-
-
-# if __name__ == '__main__':
-    # data = pe_ratio(trade_date='11-09-2024')  # trade_date='11-09-2024'
-    # data = index_data(index='NIFTY 50', period='1W')
-    # data = block_deals_data(period='1W')
-    # data = bulk_deal_data(period='1W')
-    # data = india_vix_data(period='1W')
-    # data = short_selling_data(period='1W')
-    # data = index_data(index='NIFTY 50', from_date='21-10-2024', to_date='30-10-2024')
-    # data = deliverable_position_data(symbol='SBIN', from_date='23-03-2024', to_date='23-06-2024')
-    # data = market_watch_all_indices()
-    # data = fno_equity_list()
-    # data = price_volume_and_deliverable_position_data(symbol='SBIN',  from_date='23-03-2024', to_date='23-06-2024')
-    # data = price_volume_and_deliverable_position_data(symbol='SBIN', period='1M')
-    # data = price_volume_data(symbol='SBIN', from_date='20-06-2023', to_date='20-07-2023')
-    # data = financial_results_for_equity(from_date='11-03-2025', to_date='16-03-2025', fo_sec=True,
-    #                                     fin_period='Quarterly')
-    # data = corporate_actions_for_equity(period='6M', fno_only=False)
-    # data = event_calendar_for_equity(period='1M', fno_only=False)
-    # data = sme_band_complete(trade_date='11-03-2025')
-    # data = top_gainers_or_losers('loosers')   # gainers/losers
-    # data = most_active_equities(fetch_by='volume')  # value/volume
-    # data = total_traded_stocks()
-    # df = index_data("NIFTY 50", from_date="01-11-2024", to_date="27-12-2024")
-    # print(f"Success! Got {df} rows")
-    # data.to_csv(fr'C:\Ruchi Tanmay\Stock Market\Data Analysis\Final Data\data.csv')
-
-    # data = niftymidcap150_equity_list()
-    # print(data)
-    # print(data.info())
-    # -----------------------------------------------------
-

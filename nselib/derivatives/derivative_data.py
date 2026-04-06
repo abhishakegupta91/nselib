@@ -1,6 +1,23 @@
 import datetime as dt
 import zipfile
-from nselib.derivatives.get_func import *
+from datetime import datetime
+from io import BytesIO
+
+import pandas as pd
+
+from nselib.constants import dd_mm_yyyy, future_price_volume_data_column, indices_list
+from nselib.libutil import (
+    NSEdataNotFound,
+    cleaning_nse_symbol,
+    derive_from_and_to_date,
+    nse_urlfetch,
+    validate_date_param,
+)
+from nselib.derivatives.get_func import (
+    get_future_price_volume_data,
+    get_nse_option_chain,
+    get_option_price_volume_data,
+)
 
 
 def future_price_volume_data(symbol: str, instrument: str, from_date: str = None, to_date: str = None,
@@ -126,7 +143,7 @@ def fno_bhav_copy(trade_date: str):
                 if file_name:
                     bhav_df = pd.read_csv(zip_bhav.open(file_name))
         elif request_bhav.status_code == 403:
-            raise FileNotFoundError(f' Data not found, change the date...')
+            raise FileNotFoundError("Data not found, change the date")
     # bhav_df = bhav_df[['INSTRUMENT', 'SYMBOL', 'EXPIRY_DT', 'STRIKE_PR', 'OPTION_TYP', 'OPEN', 'HIGH', 'LOW',
     #                    'CLOSE', 'SETTLE_PR', 'CONTRACTS', 'VAL_INLAKH', 'OPEN_INT', 'CHG_IN_OI', 'TIMESTAMP']]
     return bhav_df
@@ -146,11 +163,11 @@ def participant_wise_open_interest(trade_date: str):
         url = f"https://archives.nseindia.com/content/nsccl/fao_participant_oi_{str(trade_date.strftime('%d%m%Y'))}.csv"
         file_chk = nse_urlfetch(url)
     if file_chk.status_code != 200:
-        raise FileNotFoundError(f" No data available for : {trade_date}")
+        raise FileNotFoundError(f"No data available for: {trade_date}")
     try:
         # data_df = pd.read_csv(url, engine='python', sep=',', quotechar='"', on_bad_lines='skip', skiprows=1)
         data_df = pd.read_csv(BytesIO(file_chk.content), on_bad_lines='skip', skiprows=1)
-    except:
+    except Exception:
         data_df = pd.read_csv(BytesIO(file_chk.content), on_bad_lines='skip', skiprows=1)
         data_df.drop(data_df.tail(1).index, inplace=True)
         data_df.columns = [name.replace('\t', '') for name in data_df.columns]
@@ -168,7 +185,7 @@ def participant_wise_trading_volume(trade_date: str):
     # payload = f"{str(for_date.strftime('%d%m%Y'))}.csv"
     file_chk = nse_urlfetch(url)
     if file_chk.status_code != 200:
-        raise FileNotFoundError(f" No data available for : {trade_date}")
+        raise FileNotFoundError(f"No data available for: {trade_date}")
     try:
         data_df = pd.read_csv(BytesIO(file_chk.content), on_bad_lines='skip', skiprows=1)
     except Exception:
@@ -190,13 +207,13 @@ def fii_derivatives_statistics(trade_date: str):
     url = f"https://nsearchives.nseindia.com/content/fo/fii_stats_{trade_date}.xls"
     file_chk = nse_urlfetch(url)
     if file_chk.status_code != 200:
-        raise FileNotFoundError(f" No data available for : {trade_date}")
+        raise FileNotFoundError(f"No data available for: {trade_date}")
     try:
         bhav_df = pd.read_excel(BytesIO(file_chk.content), skiprows=3, skipfooter=10).dropna()
         bhav_df.columns = ['fii_derivatives', 'buy_contracts', 'buy_value_in_Cr', 'sell_contracts', 'sell_value_in_Cr',
                            'open_contracts', 'open_contracts_value_in_Cr']
     except Exception as e:
-        raise FileNotFoundError(f' FII derivatives statistics not found for : {trade_date} :: NSE error : {e}')
+        raise FileNotFoundError(f'FII derivatives statistics not found for: {trade_date} :: NSE error: {e}') from e
     return bhav_df
 
 
@@ -206,7 +223,7 @@ def expiry_dates_future():
     :return: list of dates
     """
     origin_url = "https://www.nseindia.com/option-chain"
-    payload = nse_urlfetch(f'https://www.nseindia.com/api/option-chain-contract-info?symbol=TCS',
+    payload = nse_urlfetch('https://www.nseindia.com/api/option-chain-contract-info?symbol=TCS',
                            origin_url=origin_url).json()
     return payload['expiryDates']
 
@@ -337,7 +354,7 @@ def fno_security_in_ban_period(trade_date: str):
             lines = request.content.decode("utf-8").strip().split("\n")
             securities = [line.split(",")[1] for line in lines[1:]]
         elif request.status_code == 403:
-            raise FileNotFoundError(f' Data not found, change the date...')
+            raise FileNotFoundError("Data not found, change the date")
     return securities
 
 
@@ -348,26 +365,12 @@ def live_most_active_underlying():
     :return: pandas dataframe
     """
     origin_url = "https://www.nseindia.com/market-data/most-active-underlying"
-    url = f"https://www.nseindia.com/api/live-analysis-most-active-underlying"
+    url = "https://www.nseindia.com/api/live-analysis-most-active-underlying"
     try:
         data_json = nse_urlfetch(url, origin_url=origin_url).json()
         data_df = pd.DataFrame(data_json['data'])
     except Exception as e:
-        raise NSEdataNotFound(f" Resource not available MSG: {e}")
+        raise NSEdataNotFound(f"Resource not available: {e}") from e
     return data_df
 
 
-# if __name__ == '__main__':
-    # df = future_price_volume_data("BANKNIFTY", "FUTIDX", from_date='01-11-2025', to_date='08-12-2025', period='6M')
-    # df = option_price_volume_data('NIFTY', 'OPTIDX', period='1W')
-    # df = nse_live_option_chain(symbol='TCS', expiry_date='02-01-2026')
-    # df = fii_derivatives_statistics(trade_date='16-09-2024')
-    # df = participant_wise_trading_volume(trade_date='16-09-2024')
-    # df = fno_security_in_ban_period(trade_date='26-03-2025')
-    # df = expiry_dates_option_index()
-    # df = expiry_dates_future()
-    # df = fno_bhav_copy('17-02-2025')
-    # df = live_most_active_underlying()
-    # print(df)
-    # print(df.columns)
-    # print(df[df['EXPIRY_DT']=='27-Jul-2023'])

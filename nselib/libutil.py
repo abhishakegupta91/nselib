@@ -1,10 +1,15 @@
+import logging
 import os
 from datetime import datetime, timedelta, date
-import requests
+
 import numpy as np
 import pandas as pd
-from nselib.constants import *
+import requests
 import pandas_market_calendars as mcal
+
+from nselib.constants import dd_mm_yyyy, equity_periods
+
+logger = logging.getLogger(__name__)
 
 default_header = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
@@ -27,11 +32,13 @@ header = {
 nse_calendar = mcal.get_calendar("NSE")
 
 
-class CalenderNotFound(Exception):
+class CalendarNotFound(Exception):
     def __init__(self, message):
+        super(CalendarNotFound, self).__init__(message)
 
-        # Call the base class constructor with the parameters it needs
-        super(CalenderNotFound, self).__init__(message)
+
+# Backward compatibility alias
+CalenderNotFound = CalendarNotFound
 
 
 class NSEdataNotFound(Exception):
@@ -48,7 +55,7 @@ def validate_param_from_list(value: str, static_options_list: list):
 
 def validate_date_param(from_date: str, to_date: str, period: str):
     if not period and (not from_date or not to_date):
-        raise ValueError(' Please provide the valid parameters')
+        raise ValueError('Please provide the valid parameters')
     elif period and period.upper() not in equity_periods:
         raise ValueError(f'period = {period} is not a valid value')
 
@@ -58,10 +65,10 @@ def validate_date_param(from_date: str, to_date: str, period: str):
             to_date = datetime.strptime(to_date, dd_mm_yyyy)
             time_delta = (to_date - from_date).days
             if time_delta < 1:
-                raise ValueError(f'to_date should greater than from_date ')
+                raise ValueError('to_date should be greater than from_date')
     except Exception as e:
-        print(e)
-        raise ValueError(f'either or both from_date = {from_date} || to_date = {to_date} are not valid value')
+        logger.debug("Date validation failed: %s", e)
+        raise ValueError(f'either or both from_date = {from_date} || to_date = {to_date} are not valid value') from e
 
 
 def subtract_months(dt, months):
@@ -118,7 +125,7 @@ def cleaning_column_name(col: list):
     unwanted_str_list = ['FH_', 'EOD_', 'HIT_']
     new_col = col
     for unwanted in unwanted_str_list:
-        new_col = [name.replace(f'{unwanted}', '') for name in new_col]
+        new_col = [name.replace(unwanted, '') for name in new_col]
     return new_col
 
 
@@ -135,18 +142,19 @@ def nse_urlfetch(url, origin_url="http://nseindia.com"):
 
 
 def get_nselib_path():
-    """
-    Extract isap file path
-    """
+    """Extract nselib file path."""
     mydir = os.getcwd()
     return mydir.split(r'\nselib', 1)[0]
 
 
 def get_month_from_date(trade_date):
-    """
-    get the month
-    :param trade_date:
-    :return: 'Dec'
+    """Get the abbreviated month name from a date string.
+
+    Args:
+        trade_date: Date string in 'YYYY-MM-DD' format.
+
+    Returns:
+        Abbreviated month name (e.g., 'Dec').
     """
     return datetime.strptime(trade_date, '%Y-%m-%d').strftime('%b')
 
@@ -157,7 +165,7 @@ def trading_holiday_calendar():
     try:
         data_dict = nse_urlfetch(url).json()
     except Exception as e:
-        raise CalenderNotFound(" Calender data Not found try after some time ")
+        raise CalendarNotFound("Calendar data not found. Try after some time.") from e
     for prod in data_dict:
         h_df = pd.DataFrame(data_dict[prod])
         h_df['Product'] = prod
@@ -171,11 +179,3 @@ def trading_holiday_calendar():
              'Securities Lending & Borrowing Schemes']
     data_df['Product'] = np.select(condition, value, default='Unknown')
     return data_df
-
-
-if __name__ == '__main__':
-    # data = derive_from_and_to_date('6M')
-    print(trading_holiday_calendar())
-
-
-
