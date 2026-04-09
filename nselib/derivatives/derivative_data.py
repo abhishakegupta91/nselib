@@ -179,6 +179,83 @@ def participant_wise_trading_volume(trade_date: str):
     return data_df
 
 
+def category_turnover_fo(trade_date: str):
+    """
+    get NSE derivatives category-wise turnover data as per the traded date provided
+    :param trade_date: eg:'07-04-2026'
+    :return: pandas dataframe
+    """
+    trade_date = datetime.strptime(trade_date, dd_mm_yyyy)
+    url = f"https://archives.nseindia.com/archives/fo/cat/fo_cat_turnover_{trade_date.strftime(ddmmyy)}.xls"
+    file_chk = nse_urlfetch(url)
+    if file_chk.status_code != 200:
+        raise FileNotFoundError(f" No data available for : {trade_date}")
+
+    raw = pd.read_excel(BytesIO(file_chk.content), header=None, engine="xlrd")
+    header_row = None
+    for index in range(min(len(raw), 16)):
+        first = str(raw.iloc[index, 0]).strip()
+        second = str(raw.iloc[index, 1]).strip() if raw.shape[1] > 1 else ""
+        if first.lower() == "trade date" and second.lower() in {"category", "client categories"}:
+            header_row = index
+            break
+    if header_row is None:
+        raise FileNotFoundError(f" Category turnover FO data not found for : {trade_date}")
+
+    headers = [str(value).strip() for value in raw.iloc[header_row, :4].tolist()]
+    end_row = header_row + 1
+    while end_row < len(raw.index):
+        first_value = raw.iloc[end_row, 0] if raw.shape[1] > 0 else None
+        second_value = raw.iloc[end_row, 1] if raw.shape[1] > 1 else None
+        first_text = str(first_value).strip() if first_value is not None else ""
+        second_text = str(second_value).strip() if second_value is not None else ""
+        if (
+            first_value is None
+            or (isinstance(first_value, float) and pd.isna(first_value))
+            or first_text.lower().startswith("note")
+            or first_text.lower().startswith("notes")
+            or first_text.lower() == "trade date"
+            or second_text.lower() in {"category", "client categories"}
+        ):
+            break
+        end_row += 1
+
+    data_df = raw.iloc[header_row + 1 : end_row, :4].copy()
+    data_df.columns = headers
+    data_df = data_df.rename(
+        columns={
+            "Trade Date": "Trade Date",
+            "Category": "Category",
+            "Client Categories": "Category",
+            "Buy Value in Rs.Crores": "Buy Value in Rs.Crores",
+            "Sell Value in Rs.Crores": "Sell Value in Rs.Crores",
+        }
+    )
+    data_df = data_df[
+        [
+            column
+            for column in [
+                "Trade Date",
+                "Category",
+                "Buy Value in Rs.Crores",
+                "Sell Value in Rs.Crores",
+            ]
+            if column in data_df.columns
+        ]
+    ].copy()
+    data_df["Trade Date"] = pd.to_datetime(data_df["Trade Date"], errors="coerce")
+    data_df["Category"] = data_df["Category"].astype(str).str.strip()
+    data_df = data_df[data_df["Category"].ne("")].copy()
+    for column_name in ["Buy Value in Rs.Crores", "Sell Value in Rs.Crores"]:
+        data_df[column_name] = pd.to_numeric(data_df[column_name], errors="coerce")
+    data_df = data_df.dropna(subset=["Trade Date", "Category"]).reset_index(drop=True)
+    data_df["Net Value in Rs.Crores"] = (
+        data_df["Buy Value in Rs.Crores"] - data_df["Sell Value in Rs.Crores"]
+    )
+    data_df["Trade Date"] = data_df["Trade Date"].dt.strftime("%d-%b-%Y")
+    return data_df
+
+
 def fii_derivatives_statistics(trade_date: str):
     """
     get FII derivatives statistics as per the traded date provided
