@@ -445,6 +445,7 @@ def live_most_active_underlying():
     # df = expiry_dates_future()
     # df = fno_bhav_copy('17-02-2025')
     # df = live_most_active_underlying()
+    df = category_turnover_fo(trade_date='16-09-2025')
     # print(df)
     # print(df.columns)
     # print(df[df['EXPIRY_DT']=='27-Jul-2023'])

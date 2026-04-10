@@ -1007,8 +1007,8 @@ def total_traded_stocks():
     # data = most_active_equities(fetch_by='volume')  # value/volume
     # data = total_traded_stocks()
     # df = index_data("NIFTY 50", from_date="01-11-2024", to_date="27-12-2024")
-    # print(f"Success! Got {df} rows")
-    # data.to_csv(fr'C:\Ruchi Tanmay\Stock Market\Data Analysis\Final Data\data.csv')
+    # data = category_turnover_cash(trade_date='11-09-2025')
+    # data.to_csv(fr'C:\Users\Quant\Downloads\data.csv')
 
     # data = niftymidcap150_equity_list()
     # print(data)

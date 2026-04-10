@@ -1,8 +1,12 @@
 # created by virtualenv automatically
 venv/
+.venv/
 *.csv
 __pycache__/
 *.xml
 build/
 dist/
 *.egg-info/
+pyvenv.cfg
+.idea/
+

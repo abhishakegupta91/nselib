@@ -1,6 +1,6 @@
 from io import BytesIO
 from nselib.libutil import *
-import nse_config as conf
+import nselib.indices.nse_config as conf
 import pandas as pd
 
 

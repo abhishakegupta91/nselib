@@ -1,6 +1,10 @@
 # CHANGE LOG
 #### All the changes are listed...
 
+### Version: 2.4.5 [10/04/2026]
+* update on the Readme
+* function added category_turnover_cash, category_turnover_fo
+
 ### Version: 2.4.3 [15/02/2026]
 * removing shared CSV file
 * absolute import import config

@@ -118,6 +118,7 @@ from nselib import capital_market
 | `top_gainers_or_losers()` | Top gainers or losers | `to_get` (`'gainers'` / `'loosers'`) |
 | `most_active_equities()` | Most active by value/volume | `fetch_by` (`'value'` / `'volume'`) |
 | `total_traded_stocks()` | All traded stocks summary | — |
+| `category_turnover_cash()` | category-wise turnover data | `trade_date` |
 
 **Examples:**
 
@@ -159,6 +160,7 @@ from nselib import derivatives
 | `fii_derivatives_statistics()` | FII derivatives stats | `trade_date` |
 | `fno_security_in_ban_period()` | Securities in F&O ban | `trade_date` |
 | `live_most_active_underlying()` | Most active underlyings | — |
+| `category_turnover_fo()` | derivatives category-wise turnover data | `trade_date` |
 
 **Instrument Types:**
 
