@@ -511,6 +511,91 @@ def fii_dii_trading_activity():
     return data_df
 
 
+def category_turnover_cash(trade_date: str):
+    """
+    get NSE cash market category-wise turnover data as per the traded date provided
+    :param trade_date: eg:'07-04-2026'
+    :return: pandas dataframe
+    """
+    trade_date = datetime.strptime(trade_date, dd_mm_yyyy)
+    url = f"https://archives.nseindia.com/archives/equities/cat/cat_turnover_{trade_date.strftime(ddmmyy)}.xls"
+    file_chk = nse_urlfetch(url)
+    if file_chk.status_code != 200:
+        raise FileNotFoundError(f" No data available for : {trade_date}")
+
+    raw = pd.read_excel(BytesIO(file_chk.content), header=None, engine="xlrd")
+    blocks = []
+    row_count = len(raw.index)
+    row_number = 0
+    while row_number < row_count:
+        first = str(raw.iloc[row_number, 0]).strip() if raw.shape[1] > 0 else ""
+        second = str(raw.iloc[row_number, 1]).strip() if raw.shape[1] > 1 else ""
+        if first.lower() == "trade date" and second.lower() in {"category", "client categories"}:
+            headers = [str(value).strip() for value in raw.iloc[row_number, :4].tolist()]
+            start_row = row_number + 1
+            end_row = start_row
+            while end_row < row_count:
+                first_value = raw.iloc[end_row, 0] if raw.shape[1] > 0 else None
+                second_value = raw.iloc[end_row, 1] if raw.shape[1] > 1 else None
+                first_text = str(first_value).strip() if first_value is not None else ""
+                second_text = str(second_value).strip() if second_value is not None else ""
+                if (
+                    first_value is None
+                    or (isinstance(first_value, float) and pd.isna(first_value))
+                    or first_text.lower().startswith("note")
+                    or first_text.lower().startswith("notes")
+                    or first_text.lower() == "trade date"
+                    or second_text.lower() in {"category", "client categories"}
+                ):
+                    break
+                end_row += 1
+            block = raw.iloc[start_row:end_row, :4].copy()
+            block.columns = headers
+            blocks.append(block)
+            row_number = end_row
+            continue
+        row_number += 1
+
+    if not blocks:
+        raise FileNotFoundError(f" Category turnover cash data not found for : {trade_date}")
+
+    data_df = pd.concat(blocks, ignore_index=True)
+    data_df = data_df.rename(
+        columns={
+            "Trade Date": "Trade Date",
+            "Category": "Category",
+            "Client Categories": "Category",
+            "Buy Value in Rs.": "Buy Value in Rs.Crores",
+            "Buy Value in Rs.Crores": "Buy Value in Rs.Crores",
+            "Sell Value in Rs.": "Sell Value in Rs.Crores",
+            "Sell Value in Rs.Crores": "Sell Value in Rs.Crores",
+        }
+    )
+    data_df = data_df[
+        [
+            column
+            for column in [
+                "Trade Date",
+                "Category",
+                "Buy Value in Rs.Crores",
+                "Sell Value in Rs.Crores",
+            ]
+            if column in data_df.columns
+        ]
+    ].copy()
+    data_df["Trade Date"] = pd.to_datetime(data_df["Trade Date"], errors="coerce")
+    data_df["Category"] = data_df["Category"].astype(str).str.strip()
+    data_df = data_df[data_df["Category"].ne("")].copy()
+    for column_name in ["Buy Value in Rs.Crores", "Sell Value in Rs.Crores"]:
+        data_df[column_name] = pd.to_numeric(data_df[column_name], errors="coerce")
+    data_df = data_df.dropna(subset=["Trade Date", "Category"]).reset_index(drop=True)
+    data_df["Net Value in Rs.Crores"] = (
+        data_df["Buy Value in Rs.Crores"] - data_df["Sell Value in Rs.Crores"]
+    )
+    data_df["Trade Date"] = data_df["Trade Date"].dt.strftime("%d-%b-%Y")
+    return data_df
+
+
 def var_begin_day(trade_date: str):
     """
     get the VaR Begin Day data as per the traded date
