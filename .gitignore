@@ -1,12 +1,26 @@
-# created by virtualenv automatically
+# Environments
 venv/
 .venv/
-*.csv
+pyvenv.cfg
+
+# Python cached files
 __pycache__/
-*.xml
+*.py[cod]
+.pytest_cache/
+
+# Build artifacts
 build/
 dist/
 *.egg-info/
-pyvenv.cfg
-.idea/
+nselib.egg-info/
 
+# Data files
+*.csv
+*.xml
+
+# IDE & OS files
+.idea/
+.vscode/
+.DS_Store
+.github
+docs/
