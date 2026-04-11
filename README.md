@@ -79,46 +79,48 @@ Most functions accept dates in two ways:
 from nselib import capital_market
 ```
 
-| Function | Description | Key Parameters |
-|---|---|---|
-| `price_volume_and_deliverable_position_data()` | OHLCV + delivery data | `symbol`, `from_date`/`to_date` or `period` |
-| `price_volume_data()` | OHLCV price volume data | `symbol`, `from_date`/`to_date` or `period` |
-| `deliverable_position_data()` | Delivery position data | `symbol`, `from_date`/`to_date` or `period` |
-| `bulk_deal_data()` | Bulk deal transactions | `from_date`/`to_date` or `period` |
-| `block_deals_data()` | Block deal transactions | `from_date`/`to_date` or `period` |
-| `short_selling_data()` | Short selling reports | `from_date`/`to_date` or `period` |
-| `bhav_copy_with_delivery()` | Daily bhav copy with delivery | `trade_date` |
-| `bhav_copy_equities()` | CM-UDiFF bhav copy | `trade_date` |
-| `bhav_copy_sme()` | SME bhav copy | `trade_date` |
-| `equity_list()` | All listed equities | — |
-| `fno_equity_list()` | F&O equity list with lot sizes | — |
-| `fno_index_list()` | F&O index list with lot sizes | — |
-| `nifty50_equity_list()` | Nifty 50 constituents | — |
-| `niftynext50_equity_list()` | Nifty Next 50 constituents | — |
-| `niftymidcap150_equity_list()` | Nifty Midcap 150 constituents | — |
-| `niftysmallcap250_equity_list()` | Nifty Smallcap 250 constituents | — |
-| `india_vix_data()` | India VIX historical data | `from_date`/`to_date` or `period` |
-| `index_data()` | Historical index OHLC data | `index`, `from_date`/`to_date` or `period` |
-| `market_watch_all_indices()` | Live snapshot of all indices | — |
-| `fii_dii_trading_activity()` | FII/DII buy-sell activity | — |
-| `var_begin_day()` | VaR — begin of day | `trade_date` |
-| `var_1st_intra_day()` | VaR — 1st intraday | `trade_date` |
-| `var_2nd_intra_day()` | VaR — 2nd intraday | `trade_date` |
-| `var_3rd_intra_day()` | VaR — 3rd intraday | `trade_date` |
-| `var_4th_intra_day()` | VaR — 4th intraday | `trade_date` |
-| `var_end_of_day()` | VaR — end of day | `trade_date` |
-| `sme_bhav_copy()` | SME bhav copy | `trade_date` |
-| `sme_band_complete()` | SME band complete data | `trade_date` |
-| `week_52_high_low_report()` | 52-week high/low report | `trade_date` |
+| Function | Description | Key Parameters                                            |
+|---|---|-----------------------------------------------------------|
+| `price_volume_and_deliverable_position_data()` | OHLCV + delivery data | `symbol`, `from_date`/`to_date` or `period`               |
+| `price_volume_data()` | OHLCV price volume data | `symbol`, `from_date`/`to_date` or `period`               |
+| `deliverable_position_data()` | Delivery position data | `symbol`, `from_date`/`to_date` or `period`               |
+| `bulk_deal_data()` | Bulk deal transactions | `from_date`/`to_date` or `period`                         |
+| `block_deals_data()` | Block deal transactions | `from_date`/`to_date` or `period`                         |
+| `short_selling_data()` | Short selling reports | `from_date`/`to_date` or `period`                         |
+| `bhav_copy_with_delivery()` | Daily bhav copy with delivery | `trade_date`                                              |
+| `bhav_copy_equities()` | CM-UDiFF bhav copy | `trade_date`                                              |
+| `bhav_copy_sme()` | SME bhav copy | `trade_date`                                              |
+| `equity_list()` | All listed equities | —                                                         |
+| `fno_equity_list()` | F&O equity list with lot sizes | —                                                         |
+| `fno_index_list()` | F&O index list with lot sizes | —                                                         |
+| `nifty50_equity_list()` | Nifty 50 constituents | —                                                         |
+| `niftynext50_equity_list()` | Nifty Next 50 constituents | —                                                         |
+| `niftymidcap150_equity_list()` | Nifty Midcap 150 constituents | —                                                         |
+| `niftysmallcap250_equity_list()` | Nifty Smallcap 250 constituents | —                                                         |
+| `india_vix_data()` | India VIX historical data | `from_date`/`to_date` or `period`                         |
+| `index_data()` | Historical index OHLC data | `index`, `from_date`/`to_date` or `period`                |
+| `market_watch_all_indices()` | Live snapshot of all indices | —                                                         |
+| `fii_dii_trading_activity()` | FII/DII buy-sell activity | —                                                         |
+| `var_begin_day()` | VaR — begin of day | `trade_date`                                              |
+| `var_1st_intra_day()` | VaR — 1st intraday | `trade_date`                                              |
+| `var_2nd_intra_day()` | VaR — 2nd intraday | `trade_date`                                              |
+| `var_3rd_intra_day()` | VaR — 3rd intraday | `trade_date`                                              |
+| `var_4th_intra_day()` | VaR — 4th intraday | `trade_date`                                              |
+| `var_end_of_day()` | VaR — end of day | `trade_date`                                              |
+| `sme_bhav_copy()` | SME bhav copy | `trade_date`                                              |
+| `sme_band_complete()` | SME band complete data | `trade_date`                                              |
+| `week_52_high_low_report()` | 52-week high/low report | `trade_date`                                              |
 | `financial_results_for_equity()` | Quarterly/annual financials | `from_date`/`to_date` or `period`, `fin_period`, `fo_sec` |
-| `corporate_bond_trade_report()` | Corporate bond trades | `trade_date` |
-| `pe_ratio()` | PE ratio for all equities | `trade_date` |
-| `corporate_actions_for_equity()` | Corporate actions | `from_date`/`to_date` or `period`, `fno_only` |
-| `event_calendar_for_equity()` | Event calendar | `from_date`/`to_date` or `period`, `fno_only` |
-| `top_gainers_or_losers()` | Top gainers or losers | `to_get` (`'gainers'` / `'loosers'`) |
-| `most_active_equities()` | Most active by value/volume | `fetch_by` (`'value'` / `'volume'`) |
-| `total_traded_stocks()` | All traded stocks summary | — |
-| `category_turnover_cash()` | category-wise turnover data | `trade_date` |
+| `corporate_bond_trade_report()` | Corporate bond trades | `trade_date`                                              |
+| `pe_ratio()` | PE ratio for all equities | `trade_date`                                              |
+| `corporate_actions_for_equity()` | Corporate actions | `from_date`/`to_date` or `period`, `fno_only`             |
+| `event_calendar_for_equity()` | Event calendar | `from_date`/`to_date` or `period`, `fno_only`             |
+| `top_gainers_or_losers()` | Top gainers or losers | `to_get` (`'gainers'` / `'loosers'`)                      |
+| `most_active_equities()` | Most active by value/volume | `fetch_by` (`'value'` / `'volume'`)                       |
+| `total_traded_stocks()` | All traded stocks summary | —                                                         |
+| `category_turnover_cash()` | category-wise turnover data | `trade_date`                                              |
+| `business_growth_cm_segment()` | business growth data for the NSE capital market | `data_type`, `from_year` , `to_year` |
+
 
 **Examples:**
 
@@ -147,20 +149,21 @@ df = capital_market.top_gainers_or_losers('gainers')
 from nselib import derivatives
 ```
 
-| Function | Description | Key Parameters |
-|---|---|---|
-| `future_price_volume_data()` | Futures price & volume | `symbol`, `instrument` (`FUTIDX`/`FUTSTK`), dates |
-| `option_price_volume_data()` | Options price & volume | `symbol`, `instrument` (`OPTIDX`/`OPTSTK`), `option_type` (`PE`/`CE`), dates |
-| `fno_bhav_copy()` | F&O daily bhav copy | `trade_date` |
-| `participant_wise_open_interest()` | OI by participant category | `trade_date` |
+| Function                            | Description | Key Parameters |
+|-------------------------------------|---|---|
+| `future_price_volume_data()`        | Futures price & volume | `symbol`, `instrument` (`FUTIDX`/`FUTSTK`), dates |
+| `option_price_volume_data()`        | Options price & volume | `symbol`, `instrument` (`OPTIDX`/`OPTSTK`), `option_type` (`PE`/`CE`), dates |
+| `fno_bhav_copy()`                   | F&O daily bhav copy | `trade_date` |
+| `participant_wise_open_interest()`  | OI by participant category | `trade_date` |
 | `participant_wise_trading_volume()` | Volume by participant category | `trade_date` |
-| `expiry_dates_future()` | Upcoming futures expiry dates | — |
-| `expiry_dates_option_index()` | Upcoming options expiry dates | — |
-| `nse_live_option_chain()` | Live option chain | `symbol`, `expiry_date` (optional), `oi_mode` |
-| `fii_derivatives_statistics()` | FII derivatives stats | `trade_date` |
-| `fno_security_in_ban_period()` | Securities in F&O ban | `trade_date` |
-| `live_most_active_underlying()` | Most active underlyings | — |
-| `category_turnover_fo()` | derivatives category-wise turnover data | `trade_date` |
+| `expiry_dates_future()`             | Upcoming futures expiry dates | — |
+| `expiry_dates_option_index()`       | Upcoming options expiry dates | — |
+| `nse_live_option_chain()`           | Live option chain | `symbol`, `expiry_date` (optional), `oi_mode` |
+| `fii_derivatives_statistics()`      | FII derivatives stats | `trade_date` |
+| `fno_security_in_ban_period()`      | Securities in F&O ban | `trade_date` |
+| `live_most_active_underlying()`     | Most active underlyings | — |
+| `category_turnover_fo()`            | derivatives category-wise turnover data | `trade_date` |
+| `business_growth_fo_segment()`      | business growth data for the NSE F&O segment | `data_type`, `from_year` , `to_year` |
 
 **Instrument Types:**
 
