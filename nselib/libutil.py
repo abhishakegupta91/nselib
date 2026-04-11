@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from nselib.constants import *
 import pandas_market_calendars as mcal
+from nselib.errors import CalenderNotFound, NSEdataNotFound
 
 default_header = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
@@ -25,19 +26,6 @@ header = {
             }
 
 nse_calendar = mcal.get_calendar("NSE")
-
-
-class CalenderNotFound(Exception):
-    def __init__(self, message):
-
-        # Call the base class constructor with the parameters it needs
-        super(CalenderNotFound, self).__init__(message)
-
-
-class NSEdataNotFound(Exception):
-    def __init__(self, message):
-        super(NSEdataNotFound, self).__init__(message)
-
 
 def validate_param_from_list(value: str, static_options_list: list):
     if value not in static_options_list:
