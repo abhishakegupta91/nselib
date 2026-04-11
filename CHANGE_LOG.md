@@ -1,6 +1,9 @@
 # CHANGE LOG
 #### All the changes are listed...
 
+### Version: 2.4.6 [11/04/2026]
+* function added business_growth_fo_segment, business_growth_cm_segment
+
 ### Version: 2.4.5 [10/04/2026]
 * update on the Readme
 * function added category_turnover_cash, category_turnover_fo
