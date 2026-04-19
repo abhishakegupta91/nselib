@@ -1,6 +1,9 @@
 # CHANGE LOG
 #### All the changes are listed...
 
+### Version: 2.4.7 [19/04/2026]
+* function added daily_volatility
+
 ### Version: 2.4.6 [11/04/2026]
 * function added business_growth_fo_segment, business_growth_cm_segment
 
