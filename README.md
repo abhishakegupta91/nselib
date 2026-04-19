@@ -100,6 +100,7 @@ from nselib import capital_market
 | `india_vix_data()` | India VIX historical data | `from_date`/`to_date` or `period`                         |
 | `index_data()` | Historical index OHLC data | `index`, `from_date`/`to_date` or `period`                |
 | `market_watch_all_indices()` | Live snapshot of all indices | —                                                         |
+| `daily_volatility()` | CM daily volatility report | `trade_date`                                              |
 | `fii_dii_trading_activity()` | FII/DII buy-sell activity | —                                                         |
 | `var_begin_day()` | VaR — begin of day | `trade_date`                                              |
 | `var_1st_intra_day()` | VaR — 1st intraday | `trade_date`                                              |
@@ -131,6 +132,9 @@ df = capital_market.bhav_copy_with_delivery(trade_date='20-06-2024')
 # India VIX for last 1 week
 df = capital_market.india_vix_data(period='1W')
 
+# CM daily volatility report
+df = capital_market.daily_volatility(trade_date='17-04-2026')
+
 # Historical index data
 df = capital_market.index_data(index='NIFTY 50', from_date='01-01-2024', to_date='31-03-2024')
 
@@ -156,6 +160,7 @@ from nselib import derivatives
 | `fno_bhav_copy()`                   | F&O daily bhav copy | `trade_date` |
 | `participant_wise_open_interest()`  | OI by participant category | `trade_date` |
 | `participant_wise_trading_volume()` | Volume by participant category | `trade_date` |
+| `daily_volatility()`                | F&O daily volatility report | `trade_date` |
 | `expiry_dates_future()`             | Upcoming futures expiry dates | — |
 | `expiry_dates_option_index()`       | Upcoming options expiry dates | — |
 | `nse_live_option_chain()`           | Live option chain | `symbol`, `expiry_date` (optional), `oi_mode` |
@@ -190,6 +195,9 @@ df = derivatives.nse_live_option_chain(symbol='NIFTY', oi_mode='compact')
 
 # FII derivatives statistics
 df = derivatives.fii_derivatives_statistics(trade_date='20-12-2025')
+
+# F&O daily volatility report
+df = derivatives.daily_volatility(trade_date='17-04-2026')
 ```
 
 ---
