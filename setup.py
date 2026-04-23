@@ -14,7 +14,7 @@ setuptools.setup(
     author='Ruchi Tanmay, Amlan Mishra',
     author_email='ruchitanmay@gmail.com',
     url='https://github.com/RuchiTanmay/nselib',
-    install_requires=['requests', 'pandas', 'scipy', 'pandas_market_calendars'],
+    install_requires=['requests', 'pandas', 'scipy', 'pandas_market_calendars', 'pypdf'],
     keywords=['nseindia', 'nse', 'nse data', 'stock data', 'python', 'nse daily data', 'stock markets',
               'nse library', 'nse python', 'nse daily reports'],
     classifiers=[
