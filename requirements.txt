@@ -4,3 +4,4 @@ xlrd>=2.0.1
 pypdf>=4.0.0
 numpy
 pandas_market_calendars
+pyppeteer
