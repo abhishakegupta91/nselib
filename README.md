@@ -17,6 +17,7 @@
 ## ✨ Features
 
 - **Capital Market** — Price volume data, deliverable positions, bhav copies, bulk/block deals, short selling, VaR margins, PE ratios, 52-week highs/lows, and more
+- **Cash Market** — NSDL FPI investment and derivative activity plus AMFI monthly archive reports
 - **Derivatives** — Futures & options price volume data, bhav copies, participant-wise OI & volume, live option chains, FII statistics, ban period securities
 - **Indices** — Index constituent lists, live index performances across Broad Market, Sectoral, Thematic, and Strategy categories
 - **Debt** — Securities available for trading
@@ -202,6 +203,43 @@ df = derivatives.daily_volatility(trade_date='17-04-2026')
 
 ---
 
+### Cash Market
+
+```python
+from nselib import cash_market
+```
+
+| Function | Description | Key Parameters |
+|---|---|---|
+| `nsdl_fpi_investment_activity()` | NSDL FPI investment activity for a reporting date | `trade_date` |
+| `nsdl_fpi_latest_investment_activity()` | Latest NSDL FPI investment activity | — |
+| `nsdl_fpi_derivative_activity()` | NSDL FPI derivative activity for a reporting date | `trade_date` |
+| `nsdl_fpi_latest_derivative_activity()` | Latest NSDL FPI derivative activity | — |
+| `amfi_monthly_report_links()` | List AMFI monthly archive links | — |
+| `amfi_monthly_data()` | Parse one AMFI monthly report | `report_month`, `file_type_priority` |
+| `amfi_monthly_historical_data()` | Parse AMFI monthly reports across a range | `from_month`, `to_month`, `file_type_priority` |
+
+**Examples:**
+
+```python
+# NSDL FPI investment activity for a specific reporting date
+df = cash_market.nsdl_fpi_investment_activity(trade_date='30-10-2025')
+
+# Latest NSDL FPI derivative activity
+df = cash_market.nsdl_fpi_latest_derivative_activity()
+
+# List available AMFI archive reports
+links = cash_market.amfi_monthly_report_links()
+
+# Parse a single AMFI monthly report
+df = cash_market.amfi_monthly_data(report_month='01-03-2026')
+
+# Parse AMFI history for a month range
+history = cash_market.amfi_monthly_historical_data(from_month='01-01-2024', to_month='01-03-2026')
+```
+
+---
+
 ### Indices
 
 ```python
@@ -263,6 +301,23 @@ import nselib
 
 ```python
 df = nselib.trading_holiday_calendar()
+```
+
+---
+
+## 🐞 Logging & Debugging
+
+`nselib` comes with a built-in logger that is silent by default so it doesn't pollute your application's logs. If you want to see detailed network requests, API responses, or debug errors while working with the library, you can easily enable it.
+
+```python
+import nselib
+import logging
+
+# Enable the logger to output to the console
+nselib.enable_logging(level=logging.DEBUG)
+
+# Now, function calls will emit helpful trace logs
+df = nselib.capital_market.price_volume_data('SBIN', period='1W')
 ```
 
 ---
