@@ -1,16 +1,6 @@
-dd_mm_yyyy = "%d-%m-%Y"
-dd_mmm_yyyy = "%d-%b-%Y"
-ddmmyyyy = "%d%m%Y"
-ddmmyy = "%d%m%y"
-mmm_yy = "%b-%y"
+"""Constants for capital markets."""
 
-equity_periods = ["1D", "1W", "1M", "3M", "6M", "1Y"]
-indices_list = ["NIFTY", "FINNIFTY", "BANKNIFTY"]
-
-
-# ---------- column lists-----------------
-
-price_volume_and_deliverable_position_data_columns = [
+PRICE_VOLUME_AND_DELIVERABLE_POSITION_DATA_COLUMNS = [
     "Symbol",
     "Series",
     "Date",
@@ -28,7 +18,7 @@ price_volume_and_deliverable_position_data_columns = [
     "%DlyQttoTradedQty",
 ]
 
-price_volume_data_columns = [
+PRICE_VOLUME_DATA_COLUMNS = [
     "Symbol",
     "Series",
     "Date",
@@ -44,7 +34,7 @@ price_volume_data_columns = [
     "No.ofTrades",
 ]
 
-deliverable_data_columns = [
+DELIVERABLE_DATA_COLUMNS = [
     "Symbol",
     "Series",
     "Date",
@@ -53,7 +43,7 @@ deliverable_data_columns = [
     "%DlyQttoTradedQty",
 ]
 
-bulk_deal_data_columns = [
+BLOCK_DEALS_DATA_COLUMNS = [
     "Date",
     "Symbol",
     "SecurityName",
@@ -64,7 +54,7 @@ bulk_deal_data_columns = [
     "Remarks",
 ]
 
-block_deals_data_columns = [
+BULK_DEAL_DATA_COLUMNS = [
     "Date",
     "Symbol",
     "SecurityName",
@@ -75,64 +65,9 @@ block_deals_data_columns = [
     "Remarks",
 ]
 
-short_selling_data_columns = ["Date", "Symbol", "SecurityName", "Quantity"]
 
-bhavcopy_old = [
-    "TradDt",
-    "ISIN",
-    "TckrSymb",
-    "SctySrs",
-    "OpnPric",
-    "HghPric",
-    "LwPric",
-    "ClsPric",
-    "LastPric",
-    "PrvsClsgPric",
-    "TtlTradgVol",
-    "TtlTrfVal",
-    "TtlNbOfTxsExctd",
-]
 
-bhavcopy_new = [
-    "TIMESTAMP",
-    "ISIN",
-    "SYMBOL",
-    "SERIES",
-    "OPEN",
-    "HIGH",
-    "LOW",
-    "CLOSE",
-    "LAST",
-    "PREVCLOSE",
-    "TOTTRDQTY",
-    "TOTTRDVAL",
-    "TOTALTRADES",
-]
-
-future_price_volume_data_column = [
-    "TIMESTAMP",
-    "INSTRUMENT",
-    "SYMBOL",
-    "EXPIRY_DT",
-    "STRIKE_PRICE",
-    "OPTION_TYPE",
-    "MARKET_TYPE",
-    "OPENING_PRICE",
-    "TRADE_HIGH_PRICE",
-    "TRADE_LOW_PRICE",
-    "CLOSING_PRICE",
-    "LAST_TRADED_PRICE",
-    "PREV_CLS",
-    "SETTLE_PRICE",
-    "TOT_TRADED_QTY",
-    "TOT_TRADED_VAL",
-    "OPEN_INT",
-    "CHANGE_IN_OI",
-    "MARKET_LOT",
-    "UNDERLYING_VALUE",
-]
-
-india_vix_data_column = [
+INDIA_VIX_DATA_COLUMN = [
     "TIMESTAMP",
     "INDEX_NAME",
     "OPEN_INDEX_VAL",
@@ -144,7 +79,7 @@ india_vix_data_column = [
     "VIX_PERC_CHG",
 ]
 
-index_data_columns = [
+INDEX_DATA_COLUMNS = [
     "INDEX_NAME",
     "OPEN_INDEX_VAL",
     "HIGH_INDEX_VAL",
@@ -155,7 +90,9 @@ index_data_columns = [
     "TIMESTAMP",
 ]
 
-var_columns = [
+SHORT_SELL_DATA_COLUMNS = ["Date", "Symbol", "SecurityName", "Quantity"]
+
+VAR_COLUMNS = [
     "RecordType",
     "Symbol",
     "Series",

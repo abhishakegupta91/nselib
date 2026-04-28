@@ -1,18 +1,18 @@
 import json
 import logging
-from nselib.request_maker import nse_urlfetch
 from io import BytesIO, StringIO
 
 import pandas as pd
 import requests
 
-from nselib.constants import india_vix_data_column, index_data_columns
 from nselib.errors import NSEdataNotFound
 from nselib.libutil import (
     cleaning_column_name,
     derive_from_and_to_date,
     validate_date_param,
 )
+from nselib.request_maker import nse_urlfetch
+from .constants import INDEX_DATA_COLUMNS, INDIA_VIX_DATA_COLUMN
 
 logger = logging.getLogger(__name__)
 
@@ -157,7 +157,7 @@ def get_india_vix_data(from_date: str, to_date: str) -> pd.DataFrame:
     # data_df.drop(columns='TIMESTAMP', inplace=True)
     if not data_df.empty:
         data_df.columns = cleaning_column_name(data_df.columns)
-        return data_df[india_vix_data_column]
+        return data_df[INDIA_VIX_DATA_COLUMN]
     return data_df
 
 
@@ -189,7 +189,7 @@ def get_index_data(index: str, from_date: str, to_date: str) -> pd.DataFrame:
         raise NSEdataNotFound(f" Resource not available MSG: {e}")
     if not data_df.empty:
         data_df.drop(columns="HI_TIMESTAMP", inplace=True)
-        data_df.columns = index_data_columns
+        data_df.columns = INDEX_DATA_COLUMNS
     return data_df
 
 

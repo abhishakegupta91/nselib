@@ -1,34 +1,28 @@
 import logging
-from nselib.request_maker import nse_urlfetch
-import numpy as np
-import pandas as pd
 import zipfile
-import requests
 from datetime import datetime, timedelta
 from io import BytesIO
 from typing import Optional
 
-from nselib.constants import ddmmyy
+import numpy as np
+import pandas as pd
+import requests
+
+from .constants import INDICES
 from nselib.derivatives.get_func import (
     cleaning_nse_symbol,
     dd_mm_yyyy,
     derive_from_and_to_date,
-    future_price_volume_data_column,
     get_business_growth_fo_segment_daily,
     get_business_growth_fo_segment_monthly,
     get_business_growth_fo_segment_yearly,
     get_future_price_volume_data,
     get_nse_option_chain,
     get_option_price_volume_data,
-    indices_list,
-    validate_date_param,
-    validate_param_from_list,
 )
-from nselib.errors import (
-    DerivativeInstrumentNotFoundError,
-    NSEdataNotFound,
-    NSEApiError,
-)
+from nselib.errors import (DerivativeInstrumentNotFoundError, NSEApiError, NSEdataNotFound)
+from nselib.request_maker import nse_urlfetch
+from .constants import FUTURE_PRICE_VOLUME_DATA_COLUMN
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +68,7 @@ def future_price_volume_data(
     from_date, to_date = derive_from_and_to_date(
         from_date=from_date, to_date=to_date, period=period
     )
-    nse_df = pd.DataFrame(columns=future_price_volume_data_column)
+    nse_df = pd.DataFrame(columns=FUTURE_PRICE_VOLUME_DATA_COLUMN)
     from_date = datetime.strptime(from_date, dd_mm_yyyy)
     to_date = datetime.strptime(to_date, dd_mm_yyyy)
     load_days = (to_date - from_date).days
@@ -148,7 +142,7 @@ def option_price_volume_data(
     from_date, to_date = derive_from_and_to_date(
         from_date=from_date, to_date=to_date, period=period
     )
-    nse_df = pd.DataFrame(columns=future_price_volume_data_column)
+    nse_df = pd.DataFrame(columns=FUTURE_PRICE_VOLUME_DATA_COLUMN)
     from_date = datetime.strptime(from_date, dd_mm_yyyy)
     to_date = datetime.strptime(to_date, dd_mm_yyyy)
     load_days = (to_date - from_date).days
@@ -560,7 +554,7 @@ def expiry_dates_option_index() -> dict:
     # data_df = pd.DataFrame(columns=['index', 'expiry_date'])
     logger.debug("Fetching valid expiry dates for mapped option indices.")
     data_dict = {}
-    for ind in indices_list:
+    for ind in INDICES:
         origin_url = "https://www.nseindia.com/option-chain"
         payload = nse_urlfetch(
             f"https://www.nseindia.com/api/option-chain-contract-info?symbol={ind}",

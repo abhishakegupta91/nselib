@@ -3,14 +3,10 @@ from nselib.request_maker import nse_urlfetch
 import pandas as pd
 import requests
 
-from nselib.constants import indices_list
+from .constants import INDICES
 from nselib.errors import NSEdataNotFound
-from nselib.libutil import (
-    cleaning_column_name,
-    cleaning_nse_symbol,
-    future_price_volume_data_column,
-)
-
+from nselib.libutil import cleaning_column_name, cleaning_nse_symbol
+from .constants import FUTURE_PRICE_VOLUME_DATA_COLUMN
 logger = logging.getLogger(__name__)
 
 
@@ -110,7 +106,7 @@ def get_option_price_volume_data(
     logger.debug(
         f"Successfully retrieved option price volume data with {len(data_df)} records."
     )
-    return data_df[future_price_volume_data_column]
+    return data_df[FUTURE_PRICE_VOLUME_DATA_COLUMN]
 
 
 def get_nse_option_chain(symbol: str, expiry_date: str):
@@ -134,7 +130,7 @@ def get_nse_option_chain(symbol: str, expiry_date: str):
     symbol = cleaning_nse_symbol(symbol)
     origin_url = "https://www.nseindia.com/option-chain"
 
-    if any(x in symbol for x in indices_list):
+    if any(x in symbol for x in INDICES):
         logger.debug(f"Symbol '{symbol}' identified as an index.")
         url = f"https://www.nseindia.com/api/option-chain-v3?type=Indices&symbol={symbol}&expiry={expiry_date}"
     else:

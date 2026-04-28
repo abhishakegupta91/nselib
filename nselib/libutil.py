@@ -1,17 +1,18 @@
+import logging
 import os
 from datetime import date, datetime, timedelta
 
 import numpy as np
 import pandas as pd
-import logging
-from nselib.constants import equity_periods, dd_mm_yyyy
 import pandas_market_calendars as mcal
+
 from nselib.errors import CalenderNotFound
 from nselib.request_maker import nse_urlfetch
+from nselib.utils.enums import DateFormatEnum
 
 logger = logging.getLogger(__name__)
 
-
+EQUITY_PERIODS = ["1D", "1W", "1M", "3M", "6M", "1Y"]
 nse_calendar = mcal.get_calendar("NSE")
 
 
@@ -25,13 +26,13 @@ def validate_param_from_list(value: str, static_options_list: list):
 def validate_date_param(from_date: str, to_date: str, period: str):
     if not period and (not from_date or not to_date):
         raise ValueError(" Please provide the valid parameters")
-    elif period and period.upper() not in equity_periods:
+    elif period and period.upper() not in EQUITY_PERIODS:
         raise ValueError(f"period = {period} is not a valid value")
 
     try:
         if not period:
-            from_date = datetime.strptime(from_date, dd_mm_yyyy)
-            to_date = datetime.strptime(to_date, dd_mm_yyyy)
+            from_date = datetime.strptime(from_date, DateFormatEnum.DD_MM_YYYY.value)
+            to_date = datetime.strptime(to_date, DateFormatEnum.DD_MM_YYYY.value)
             time_delta = (to_date - from_date).days
             if time_delta < 1:
                 raise ValueError("to_date should greater than from_date")
@@ -122,8 +123,8 @@ def derive_from_and_to_date(
         if not date_chk.empty:  # If market was open on this day
             break  # Stop the loop
         f_date -= timedelta(days=1)
-    from_date = f_date.strftime(dd_mm_yyyy)
-    today_str = today.strftime(dd_mm_yyyy)
+    from_date = f_date.strftime(DateFormatEnum.DD_MM_YYYY.value)
+    today_str = today.strftime(DateFormatEnum.DD_MM_YYYY.value)
     logger.debug(f"Final derived from_date: {from_date}, to_date: {today_str}")
     return from_date, today_str
 
