@@ -1,6 +1,16 @@
 # CHANGE LOG
 #### All the changes are listed...
 
+### Version: 2.5.0 [24/04/2026]
+* New data functions available for cash market data.
+  * amfi_monthly_data
+  * amfi_monthly_historical_data
+  * amfi_monthly_report_links
+  * nsdl_fpi_derivative_activity
+  * nsdl_fpi_investment_activity
+  * nsdl_fpi_latest_derivative_activity
+  * nsdl_fpi_latest_investment_activity
+
 ### Version: 2.4.7 [19/04/2026]
 * function added daily_volatility
 
