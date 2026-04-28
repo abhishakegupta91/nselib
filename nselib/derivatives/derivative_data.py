@@ -2,29 +2,75 @@ import logging
 import zipfile
 from datetime import datetime, timedelta
 from io import BytesIO
-from typing import Optional
+from typing import Callable, Optional
 
 import numpy as np
 import pandas as pd
-import requests
 
-from .constants import INDICES
-from nselib.derivatives.get_func import (
-    cleaning_nse_symbol,
-    dd_mm_yyyy,
-    derive_from_and_to_date,
-    get_business_growth_fo_segment_daily,
-    get_business_growth_fo_segment_monthly,
-    get_business_growth_fo_segment_yearly,
-    get_future_price_volume_data,
-    get_nse_option_chain,
-    get_option_price_volume_data,
+from nselib.derivatives.api_fetchers import (
+    fetch_business_growth_fo_daily,
+    fetch_business_growth_fo_monthly,
+    fetch_business_growth_fo_yearly,
+    fetch_future_price_volume,
+    fetch_option_chain,
+    fetch_option_price_volume,
 )
 from nselib.errors import (DerivativeInstrumentNotFoundError, NSEApiError, NSEdataNotFound)
+from nselib.libutil import (
+    cleaning_nse_symbol,
+    derive_from_and_to_date,
+    validate_date_param,
+    validate_param_from_list,
+)
 from nselib.request_maker import nse_urlfetch
-from .constants import FUTURE_PRICE_VOLUME_DATA_COLUMN
+from nselib.utils.enums import DateFormatEnum
+from .constants import FUTURE_PRICE_VOLUME_DATA_COLUMN, INDICES
 
 logger = logging.getLogger(__name__)
+
+def _paginated_fetch(
+    from_date: str,
+    to_date: str,
+    fetch_fn: Callable[..., pd.DataFrame],
+    columns: list,
+    chunk_days: int = 90,
+    **fetch_kwargs,
+) -> pd.DataFrame:
+    """Fetch data in date chunks and concatenate results.
+
+    The NSE API limits historical queries to ~90 days at a time. This helper
+    splits the requested range into chunks, calls ``fetch_fn`` for each, and
+    returns a single concatenated DataFrame.
+
+    Args:
+        from_date: Start date in ``'DD-MM-YYYY'`` format.
+        to_date: End date in ``'DD-MM-YYYY'`` format.
+        fetch_fn: The low-level API fetcher to call per chunk.
+        columns: Column list for the empty-result fallback DataFrame.
+        chunk_days: Max days per API call (default 90).
+        **fetch_kwargs: Additional keyword arguments forwarded to ``fetch_fn``.
+
+    Returns:
+        Concatenated DataFrame of all chunks.
+    """
+    fmt = DateFormatEnum.DD_MM_YYYY.value
+    start = datetime.strptime(from_date, fmt)
+    end = datetime.strptime(to_date, fmt)
+    frames: list[pd.DataFrame] = []
+
+    while start < end:
+        chunk_end = min(start + timedelta(days=chunk_days), end)
+        df = fetch_fn(
+            from_date=start.strftime(fmt),
+            to_date=chunk_end.strftime(fmt),
+            **fetch_kwargs,
+        )
+        frames.append(df)
+        start = chunk_end + timedelta(days=1)
+
+    if frames:
+        return pd.concat(frames, ignore_index=True)
+    return pd.DataFrame(columns=columns)
 
 
 def future_price_volume_data(
@@ -34,8 +80,7 @@ def future_price_volume_data(
     to_date: Optional[str] = None,
     period: Optional[str] = None,
 ):
-    """
-    Fetch the contract-wise future price and volume data set.
+    """Fetch the contract-wise future price and volume data set.
 
     Args:
         symbol (str): The NSE symbol (e.g., 'SBIN' or 'BANKNIFTY').
@@ -57,7 +102,8 @@ def future_price_volume_data(
     """
     validate_date_param(from_date, to_date, period)
     logger.debug(
-        f"Fetching future price volume data (aggregated) for symbol: {symbol}, instrument: {instrument}, period: {period}"
+        "Fetching future price volume data for symbol=%s, instrument=%s, period=%s",
+        symbol, instrument, period,
     )
     symbol, instrument = cleaning_nse_symbol(symbol=symbol), instrument.upper()
     if instrument not in ["FUTIDX", "FUTSTK"]:
@@ -68,27 +114,15 @@ def future_price_volume_data(
     from_date, to_date = derive_from_and_to_date(
         from_date=from_date, to_date=to_date, period=period
     )
-    nse_df = pd.DataFrame(columns=FUTURE_PRICE_VOLUME_DATA_COLUMN)
-    from_date = datetime.strptime(from_date, dd_mm_yyyy)
-    to_date = datetime.strptime(to_date, dd_mm_yyyy)
-    load_days = (to_date - from_date).days
-    while load_days > 0:
-        if load_days > 90:
-            end_date = (from_date + timedelta(90)).strftime(dd_mm_yyyy)
-            start_date = from_date.strftime(dd_mm_yyyy)
-        else:
-            end_date = to_date.strftime(dd_mm_yyyy)
-            start_date = from_date.strftime(dd_mm_yyyy)
-        data_df = get_future_price_volume_data(
-            symbol=symbol, instrument=instrument, from_date=start_date, to_date=end_date
-        )
-        from_date = from_date + timedelta(91)
-        load_days = (to_date - from_date).days
-        if nse_df.empty:
-            nse_df = data_df
-        else:
-            nse_df = pd.concat([nse_df, data_df], ignore_index=True)
-    logger.debug(f"Aggregated {len(nse_df)} records for {symbol} futures.")
+    nse_df = _paginated_fetch(
+        from_date=from_date,
+        to_date=to_date,
+        fetch_fn=fetch_future_price_volume,
+        columns=FUTURE_PRICE_VOLUME_DATA_COLUMN,
+        symbol=symbol,
+        instrument=instrument,
+    )
+    logger.debug("Aggregated %d records for %s futures.", len(nse_df), symbol)
     return nse_df
 
 
@@ -100,8 +134,8 @@ def option_price_volume_data(
     to_date: Optional[str] = None,
     period: Optional[str] = None,
 ) -> pd.DataFrame:
-    """
-    Fetch the contract-wise option price and volume data set.
+    """Fetch the contract-wise option price and volume data set.
+
     Note: Collecting more than 90 days of data may take a significantly longer time.
 
     Args:
@@ -125,12 +159,13 @@ def option_price_volume_data(
     """
     validate_date_param(from_date, to_date, period)
     logger.debug(
-        f"Fetching option price volume data (aggregated) for symbol: {symbol}, instrument: {instrument}, option_type: {option_type}"
+        "Fetching option price volume data for symbol=%s, instrument=%s, option_type=%s",
+        symbol, instrument, option_type,
     )
     symbol, instrument = cleaning_nse_symbol(symbol=symbol), instrument.upper()
     if instrument not in ["OPTIDX", "OPTSTK"]:
         raise DerivativeInstrumentNotFoundError(
-            f"{instrument} is not a future instrument"
+            f"{instrument} is not an option instrument"
         )
 
     if option_type and option_type not in ["PE", "CE"]:
@@ -138,37 +173,25 @@ def option_price_volume_data(
             f"{option_type} is not a valid option type"
         )
 
-    option_type = [option_type] if option_type else ["PE", "CE"]
+    option_types = [option_type] if option_type else ["PE", "CE"]
     from_date, to_date = derive_from_and_to_date(
         from_date=from_date, to_date=to_date, period=period
     )
-    nse_df = pd.DataFrame(columns=FUTURE_PRICE_VOLUME_DATA_COLUMN)
-    from_date = datetime.strptime(from_date, dd_mm_yyyy)
-    to_date = datetime.strptime(to_date, dd_mm_yyyy)
-    load_days = (to_date - from_date).days
-    while load_days > 0:
-        if load_days > 90:
-            end_date = (from_date + timedelta(90)).strftime(dd_mm_yyyy)
-            start_date = from_date.strftime(dd_mm_yyyy)
-        else:
-            end_date = to_date.strftime(dd_mm_yyyy)
-            start_date = from_date.strftime(dd_mm_yyyy)
-        for opt_typ in option_type:
-            data_df = get_option_price_volume_data(
-                symbol=symbol,
-                instrument=instrument,
-                option_type=opt_typ,
-                from_date=start_date,
-                to_date=end_date,
-            )
-            if nse_df.empty:
-                nse_df = data_df
-            else:
-                nse_df = pd.concat([nse_df, data_df], ignore_index=True)
-        from_date = from_date + timedelta(91)
-        load_days = (to_date - from_date).days
+    frames: list[pd.DataFrame] = []
+    for opt_typ in option_types:
+        df = _paginated_fetch(
+            from_date=from_date,
+            to_date=to_date,
+            fetch_fn=fetch_option_price_volume,
+            columns=FUTURE_PRICE_VOLUME_DATA_COLUMN,
+            symbol=symbol,
+            instrument=instrument,
+            option_type=opt_typ,
+        )
+        frames.append(df)
 
-    logger.debug(f"Aggregated {len(nse_df)} records for {symbol} options.")
+    nse_df = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=FUTURE_PRICE_VOLUME_DATA_COLUMN)
+    logger.debug("Aggregated %d records for %s options.", len(nse_df), symbol)
     return nse_df
 
 
@@ -190,7 +213,7 @@ def fno_bhav_copy(trade_date: str) -> pd.DataFrame:
         >>> from nselib import derivatives
         >>> df = derivatives.fno_bhav_copy(trade_date='17-02-2025')
     """
-    trade_date = datetime.strptime(trade_date, dd_mm_yyyy)
+    trade_date = datetime.strptime(trade_date, DateFormatEnum.DD_MM_YYYY.value)
     logger.debug(
         f"Fetching F&O Bhavcopy for trade date: {trade_date.strftime('%d-%m-%Y')}"
     )
@@ -244,7 +267,7 @@ def participant_wise_open_interest(trade_date: str) -> pd.DataFrame:
         >>> from nselib import derivatives
         >>> df = derivatives.participant_wise_open_interest(trade_date='16-09-2024')
     """
-    trade_date = datetime.strptime(trade_date, dd_mm_yyyy)
+    trade_date = datetime.strptime(trade_date, DateFormatEnum.DD_MM_YYYY.value)
     logger.debug(
         f"Fetching participant-wise open interest for trade date: {trade_date.strftime('%d-%m-%Y')}"
     )
@@ -260,20 +283,23 @@ def participant_wise_open_interest(trade_date: str) -> pd.DataFrame:
         )
         raise NSEdataNotFound(f"No data available for : {trade_date}")
     try:
-        # data_df = pd.read_csv(url, engine='python', sep=',', quotechar='"', on_bad_lines='skip', skiprows=1)
         data_df = pd.read_csv(
             BytesIO(file_chk.content), on_bad_lines="skip", skiprows=1
         )
     except Exception as e:
-        logger.error(
-            f"Error while fetching participant wise open interest data: {e}",
-            exc_info=e,
+        logger.warning(
+            "Standard CSV parse failed, attempting lenient parse: %s", e,
         )
+        # Fallback: use python engine which is more forgiving with malformed rows
         data_df = pd.read_csv(
-            BytesIO(file_chk.content), on_bad_lines="skip", skiprows=1
+            BytesIO(file_chk.content),
+            engine="python",
+            sep=",",
+            on_bad_lines="skip",
+            skiprows=1,
         )
-        data_df.drop(data_df.tail(1).index, inplace=True)
-        data_df.columns = [name.replace("\t", "") for name in data_df.columns]
+    # Clean up tab characters that NSE sometimes embeds in column headers
+    data_df.columns = [name.replace("\t", "").strip() for name in data_df.columns]
     return data_df
 
 
@@ -294,7 +320,7 @@ def participant_wise_trading_volume(trade_date: str) -> pd.DataFrame:
         >>> from nselib import derivatives
         >>> df = derivatives.participant_wise_trading_volume(trade_date='16-09-2024')
     """
-    trade_date = datetime.strptime(trade_date, dd_mm_yyyy)
+    trade_date = datetime.strptime(trade_date, DateFormatEnum.DD_MM_YYYY.value)
     logger.debug(
         f"Fetching participant-wise trading volume for trade date: {trade_date.strftime('%d-%m-%Y')}"
     )
@@ -334,7 +360,7 @@ def daily_volatility(trade_date: str):
     :param trade_date: eg:'20-06-2023'
     :return: pandas dataframe
     """
-    trade_date = datetime.strptime(trade_date, dd_mm_yyyy)
+    trade_date = datetime.strptime(trade_date, DateFormatEnum.DD_MM_YYYY.value)
     payload = f"FOVOLT_{str(trade_date.strftime('%d%m%Y'))}.csv"
     origin_url = "https://www.nseindia.com/all-reports-derivatives"
     report_urls = [
@@ -347,13 +373,7 @@ def daily_volatility(trade_date: str):
     ]
     last_status_code = None
     for url in report_urls:
-        # NSE archive requests can fail behind stale local proxy settings, so fetch this report
-        # with a session that ignores environment proxies while preserving the usual cookie flow.
-        r_session = requests.session()
-        r_session.trust_env = False
-        nse_live = r_session.get(origin_url, headers=default_header)
-        cookies = nse_live.cookies
-        report = r_session.get(url, headers=header, cookies=cookies)
+        report = nse_urlfetch(url, origin_url=origin_url)
         last_status_code = report.status_code
         if report.status_code != 200:
             continue
@@ -361,13 +381,15 @@ def daily_volatility(trade_date: str):
             data_df = pd.read_csv(BytesIO(report.content), skipinitialspace=True)
         except Exception as exc:
             raise FileNotFoundError(
-                f" Daily volatility data not found for : {trade_date.strftime(dd_mm_yyyy)} :: NSE error : {exc}"
+                f"Daily volatility data not found for: "
+                f"{trade_date.strftime(DateFormatEnum.DD_MM_YYYY.value)} :: NSE error: {exc}"
             )
         data_df = data_df.dropna(how="all")
         data_df.columns = [column_name.strip() for column_name in data_df.columns]
         return data_df
     raise FileNotFoundError(
-        f" No daily volatility data available for : {trade_date.strftime(dd_mm_yyyy)} :: status={last_status_code}"
+        f"No daily volatility data available for: "
+        f"{trade_date.strftime(DateFormatEnum.DD_MM_YYYY.value)} :: status={last_status_code}"
     )
 
 
@@ -388,11 +410,11 @@ def category_turnover_fo(trade_date: str) -> pd.DataFrame:
         >>> from nselib import derivatives
         >>> df = derivatives.category_turnover_fo(trade_date='16-09-2025')
     """
-    trade_date = datetime.strptime(trade_date, dd_mm_yyyy)
+    trade_date = datetime.strptime(trade_date, DateFormatEnum.DD_MM_YYYY.value)
     logger.debug(
         f"Fetching category-wise turnover for trade date: {trade_date.strftime('%d-%m-%Y')}"
     )
-    url = f"https://archives.nseindia.com/archives/fo/cat/fo_cat_turnover_{trade_date.strftime(ddmmyy)}.xls"
+    url = f"https://archives.nseindia.com/archives/fo/cat/fo_cat_turnover_{trade_date.strftime(DateFormatEnum.DDMMYY.value)}.xls"
     file_chk = nse_urlfetch(url)
     if file_chk.status_code != 200:
         logger.error(
@@ -564,16 +586,46 @@ def expiry_dates_option_index() -> dict:
     return data_dict
 
 
+def _extract_option_side(record: dict, side: str, full_mode: bool) -> dict:
+    """Extract CE or PE data from a single option chain record.
+
+    Args:
+        record: A single record from the option chain ``data`` array.
+        side: ``'CE'`` for calls, ``'PE'`` for puts.
+        full_mode: If True, include bid/ask columns.
+
+    Returns:
+        Dict with prefixed keys (e.g., ``CALLS_OI`` or ``PUTS_LTP``).
+    """
+    prefix = "CALLS" if side == "CE" else "PUTS"
+    data = record.get(side, {})
+    result = {
+        f"{prefix}_OI": data.get("openInterest", 0),
+        f"{prefix}_Chng_in_OI": data.get("changeinOpenInterest", 0),
+        f"{prefix}_Volume": data.get("totalTradedVolume", 0),
+        f"{prefix}_IV": data.get("impliedVolatility", 0),
+        f"{prefix}_LTP": data.get("lastPrice", 0),
+        f"{prefix}_Net_Chng": data.get("change", 0),
+    }
+    if full_mode:
+        result.update({
+            f"{prefix}_Bid_Qty": data.get("buyQuantity1", 0),
+            f"{prefix}_Bid_Price": data.get("buyPrice1", 0),
+            f"{prefix}_Ask_Price": data.get("sellPrice1", 0),
+            f"{prefix}_Ask_Qty": data.get("sellQuantity1", 0),
+        })
+    return result
+
+
 def nse_live_option_chain(
     symbol: str, expiry_date: str = None, oi_mode: str = "full"
 ) -> pd.DataFrame:
-    """
-    Fetch the live NSE option chain.
+    """Fetch the live NSE option chain.
 
     Args:
         symbol (str): The NSE symbol (e.g., 'SBIN' or 'BANKNIFTY').
-        expiry_date (str, optional): The specific expiry date to filter by, in 'dd-mm-YYYY' format.
-        oi_mode (str, optional): The detail level of the Open Interest data. Can be 'full' or 'compact'.
+        expiry_date (str, optional): Expiry date to filter by, in 'dd-mm-YYYY' format.
+        oi_mode (str, optional): Detail level — 'full' (with bid/ask) or 'compact'.
 
     Returns:
         pd.DataFrame: A DataFrame containing the real-time option chain data.
@@ -582,196 +634,42 @@ def nse_live_option_chain(
         >>> from nselib import derivatives
         >>> chain_df = derivatives.nse_live_option_chain(symbol='TCS', expiry_date='20-06-2023')
     """
-
     if expiry_date:
         exp_date = pd.to_datetime(expiry_date, format="%d-%m-%Y")
-        expiry_date = pd.to_datetime(exp_date, format="%d-%m-%Y").strftime("%d-%b-%Y")
+        expiry_date = exp_date.strftime("%d-%b-%Y")
+
     logger.debug(
-        f"Parsing live option chain data for symbol: {symbol}, expiry_date: {expiry_date}, mode: {oi_mode}"
+        "Parsing live option chain: symbol=%s, expiry=%s, mode=%s",
+        symbol, expiry_date, oi_mode,
     )
-    payload = get_nse_option_chain(symbol, expiry_date).json()
-    if oi_mode == "compact":
-        col_names = [
-            "Fetch_Time",
-            "Symbol",
-            "Expiry_Date",
-            "CALLS_OI",
-            "CALLS_Chng_in_OI",
-            "CALLS_Volume",
-            "CALLS_IV",
-            "CALLS_LTP",
-            "CALLS_Net_Chng",
-            "Strike_Price",
-            "PUTS_OI",
-            "PUTS_Chng_in_OI",
-            "PUTS_Volume",
-            "PUTS_IV",
-            "PUTS_LTP",
-            "PUTS_Net_Chng",
-        ]
-    else:
-        col_names = [
-            "Fetch_Time",
-            "Symbol",
-            "Expiry_Date",
-            "CALLS_OI",
-            "CALLS_Chng_in_OI",
-            "CALLS_Volume",
-            "CALLS_IV",
-            "CALLS_LTP",
-            "CALLS_Net_Chng",
-            "CALLS_Bid_Qty",
-            "CALLS_Bid_Price",
-            "CALLS_Ask_Price",
-            "CALLS_Ask_Qty",
-            "Strike_Price",
-            "PUTS_Bid_Qty",
-            "PUTS_Bid_Price",
-            "PUTS_Ask_Price",
-            "PUTS_Ask_Qty",
-            "PUTS_Net_Chng",
-            "PUTS_LTP",
-            "PUTS_IV",
-            "PUTS_Volume",
-            "PUTS_Chng_in_OI",
-            "PUTS_OI",
-        ]
+    payload = fetch_option_chain(symbol, expiry_date).json()
+    full_mode = oi_mode == "full"
+    rows = []
 
-    oi_data = pd.DataFrame(columns=col_names)
+    for record in payload["records"]["data"]:
+        if expiry_date and record.get("expiryDates") != expiry_date:
+            continue
 
-    oi_row = {
-        "Fetch_Time": None,
-        "Symbol": None,
-        "Expiry_Date": None,
-        "CALLS_OI": 0,
-        "CALLS_Chng_in_OI": 0,
-        "CALLS_Volume": 0,
-        "CALLS_IV": 0,
-        "CALLS_LTP": 0,
-        "CALLS_Net_Chng": 0,
-        "CALLS_Bid_Qty": 0,
-        "CALLS_Bid_Price": 0,
-        "CALLS_Ask_Price": 0,
-        "CALLS_Ask_Qty": 0,
-        "Strike_Price": 0,
-        "PUTS_OI": 0,
-        "PUTS_Chng_in_OI": 0,
-        "PUTS_Volume": 0,
-        "PUTS_IV": 0,
-        "PUTS_LTP": 0,
-        "PUTS_Net_Chng": 0,
-        "PUTS_Bid_Qty": 0,
-        "PUTS_Bid_Price": 0,
-        "PUTS_Ask_Price": 0,
-        "PUTS_Ask_Qty": 0,
-    }
+        row = {
+            "Fetch_Time": payload["records"]["timestamp"],
+            "Symbol": symbol,
+            "Expiry_Date": record.get("expiryDates"),
+            "Strike_Price": record.get("strikePrice"),
+        }
+        row.update(_extract_option_side(record, "CE", full_mode))
+        row.update(_extract_option_side(record, "PE", full_mode))
+        rows.append(row)
 
-    # print(expiry_date)
-    for m in range(len(payload["records"]["data"])):
-        if not expiry_date or (
-            payload["records"]["data"][m]["expiryDates"] == expiry_date
-        ):
-            try:
-                oi_row["Expiry_Date"] = payload["records"]["data"][m]["expiryDates"]
-                oi_row["CALLS_OI"] = payload["records"]["data"][m]["CE"]["openInterest"]
-                oi_row["CALLS_Chng_in_OI"] = payload["records"]["data"][m]["CE"][
-                    "changeinOpenInterest"
-                ]
-                oi_row["CALLS_Volume"] = payload["records"]["data"][m]["CE"][
-                    "totalTradedVolume"
-                ]
-                oi_row["CALLS_IV"] = payload["records"]["data"][m]["CE"][
-                    "impliedVolatility"
-                ]
-                oi_row["CALLS_LTP"] = payload["records"]["data"][m]["CE"]["lastPrice"]
-                oi_row["CALLS_Net_Chng"] = payload["records"]["data"][m]["CE"]["change"]
-                if oi_mode == "full":
-                    oi_row["CALLS_Bid_Qty"] = payload["records"]["data"][m]["CE"][
-                        "buyQuantity1"
-                    ]
-                    oi_row["CALLS_Bid_Price"] = payload["records"]["data"][m]["CE"][
-                        "buyPrice1"
-                    ]
-                    oi_row["CALLS_Ask_Price"] = payload["records"]["data"][m]["CE"][
-                        "sellPrice1"
-                    ]
-                    oi_row["CALLS_Ask_Qty"] = payload["records"]["data"][m]["CE"][
-                        "sellQuantity1"
-                    ]
-            except KeyError:
-                (
-                    oi_row["CALLS_OI"],
-                    oi_row["CALLS_Chng_in_OI"],
-                    oi_row["CALLS_Volume"],
-                    oi_row["CALLS_IV"],
-                    oi_row["CALLS_LTP"],
-                    oi_row["CALLS_Net_Chng"],
-                ) = 0, 0, 0, 0, 0, 0
-                if oi_mode == "full":
-                    (
-                        oi_row["CALLS_Bid_Qty"],
-                        oi_row["CALLS_Bid_Price"],
-                        oi_row["CALLS_Ask_Price"],
-                        oi_row["CALLS_Ask_Qty"],
-                    ) = 0, 0, 0, 0
-                pass
-
-            oi_row["Strike_Price"] = payload["records"]["data"][m]["strikePrice"]
-
-            try:
-                oi_row["PUTS_OI"] = payload["records"]["data"][m]["PE"]["openInterest"]
-                oi_row["PUTS_Chng_in_OI"] = payload["records"]["data"][m]["PE"][
-                    "changeinOpenInterest"
-                ]
-                oi_row["PUTS_Volume"] = payload["records"]["data"][m]["PE"][
-                    "totalTradedVolume"
-                ]
-                oi_row["PUTS_IV"] = payload["records"]["data"][m]["PE"][
-                    "impliedVolatility"
-                ]
-                oi_row["PUTS_LTP"] = payload["records"]["data"][m]["PE"]["lastPrice"]
-                oi_row["PUTS_Net_Chng"] = payload["records"]["data"][m]["PE"]["change"]
-                if oi_mode == "full":
-                    oi_row["PUTS_Bid_Qty"] = payload["records"]["data"][m]["PE"][
-                        "buyQuantity1"
-                    ]
-                    oi_row["PUTS_Bid_Price"] = payload["records"]["data"][m]["PE"][
-                        "buyPrice1"
-                    ]
-                    oi_row["PUTS_Ask_Price"] = payload["records"]["data"][m]["PE"][
-                        "sellPrice1"
-                    ]
-                    oi_row["PUTS_Ask_Qty"] = payload["records"]["data"][m]["PE"][
-                        "sellQuantity1"
-                    ]
-            except KeyError:
-                (
-                    oi_row["PUTS_OI"],
-                    oi_row["PUTS_Chng_in_OI"],
-                    oi_row["PUTS_Volume"],
-                    oi_row["PUTS_IV"],
-                    oi_row["PUTS_LTP"],
-                    oi_row["PUTS_Net_Chng"],
-                ) = 0, 0, 0, 0, 0, 0
-                if oi_mode == "full":
-                    (
-                        oi_row["PUTS_Bid_Qty"],
-                        oi_row["PUTS_Bid_Price"],
-                        oi_row["PUTS_Ask_Price"],
-                        oi_row["PUTS_Ask_Qty"],
-                    ) = 0, 0, 0, 0
-
-            # if oi_mode == 'full':
-            #     oi_row['CALLS_Chart'], oi_row['PUTS_Chart'] = 0, 0
-            if oi_data.empty:
-                oi_data = pd.DataFrame([oi_row]).copy()
-            else:
-                oi_data = pd.concat(
-                    [oi_data, pd.DataFrame([oi_row])], ignore_index=True
-                )
-            oi_data["Symbol"] = symbol
-            oi_data["Fetch_Time"] = payload["records"]["timestamp"]
-    return oi_data
+    if rows:
+        return pd.DataFrame(rows)
+    # Return empty DataFrame with expected columns
+    base_cols = ["Fetch_Time", "Symbol", "Expiry_Date", "Strike_Price"]
+    side_cols = ["OI", "Chng_in_OI", "Volume", "IV", "LTP", "Net_Chng"]
+    bid_ask = ["Bid_Qty", "Bid_Price", "Ask_Price", "Ask_Qty"] if full_mode else []
+    columns = base_cols
+    for prefix in ["CALLS", "PUTS"]:
+        columns += [f"{prefix}_{c}" for c in side_cols + bid_ask]
+    return pd.DataFrame(columns=columns)
 
 
 def fno_security_in_ban_period(trade_date: str) -> list:
@@ -788,7 +686,7 @@ def fno_security_in_ban_period(trade_date: str) -> list:
         >>> from nselib import derivatives
         >>> banned_securities = derivatives.fno_security_in_ban_period(trade_date='26-03-2025')
     """
-    trade_date = datetime.strptime(trade_date, dd_mm_yyyy)
+    trade_date = datetime.strptime(trade_date, DateFormatEnum.DD_MM_YYYY.value)
     logger.debug(
         f"Fetching F&O securities in ban period for trade date: {trade_date.strftime('%d-%m-%Y')}"
     )
@@ -958,17 +856,17 @@ def business_growth_fo_segment(
     validate_param_from_list(data_type, static_options_list)
 
     if data_type == "yearly":
-        data_json = get_business_growth_fo_segment_yearly()
+        data_json = fetch_business_growth_fo_yearly()
     elif data_type == "monthly":
         from_year, to_year = _normalize_business_growth_fo_segment_financial_year(
             from_year, to_year
         )
-        data_json = get_business_growth_fo_segment_monthly(
+        data_json = fetch_business_growth_fo_monthly(
             from_year=from_year, to_year=to_year
         )
     else:
         month, year = _normalize_business_growth_fo_segment_daily_args(month, year)
-        data_json = get_business_growth_fo_segment_daily(month=month, year=year)
+        data_json = fetch_business_growth_fo_daily(month=month, year=year)
 
     return _business_growth_fo_segment_dataframe(data_json)
 
