@@ -1,10 +1,10 @@
 import datetime as dt
 import logging
+from nselib.request_maker import nse_urlfetch
 from io import BytesIO
 
 import pandas as pd
 
-from nselib.libutil import nse_urlfetch
 
 logger = logging.getLogger(__name__)
 

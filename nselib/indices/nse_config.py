@@ -1,9 +1,25 @@
 class NiftySectoralIndices:
-    indices_list = ["Nifty Auto", "Nifty Bank", "Nifty Chemicals", "Nifty Financial Services", "Nifty FMCG",
-                    "Nifty Healthcare", "Nifty IT", "Nifty Media", "Nifty Metal", "Nifty Pharma", "Nifty Private Bank",
-                    "Nifty PSU Bank", "Nifty Realty", "Nifty Consumer Durables", "Nifty Oil and Gas",
-                    "Nifty500 Healthcare", "Nifty MidSmall Financial Services", "Nifty MidSmall Healthcare",
-                    "Nifty MidSmall IT & Telecom"]
+    indices_list = [
+        "Nifty Auto",
+        "Nifty Bank", 
+        "Nifty Chemicals", 
+        "Nifty Financial Services", 
+        "Nifty FMCG",
+        "Nifty Healthcare", 
+        "Nifty IT", 
+        "Nifty Media", 
+        "Nifty Metal", 
+        "Nifty Pharma", 
+        "Nifty Private Bank",
+        "Nifty PSU Bank", 
+        "Nifty Realty", 
+        "Nifty Consumer Durables", 
+        "Nifty Oil and Gas",
+        "Nifty500 Healthcare", 
+        "Nifty MidSmall Financial Services", 
+        "Nifty MidSmall Healthcare",
+        "Nifty MidSmall IT & Telecom"
+    ]
     index_constituent_list_urls = {
         "Nifty Auto": "https://www.niftyindices.com/IndexConstituent/ind_niftyautolist.csv",
         "Nifty Bank": "https://www.niftyindices.com/IndexConstituent/ind_niftybanklist.csv",
@@ -49,10 +65,26 @@ class NiftySectoralIndices:
 
 
 class NiftyBroadMarketIndices:
-    indices_list = ["Nifty 50", "Nifty Next 50", "Nifty 100", "Nifty 200", "Nifty Total Market", "Nifty 500",
-                    "Nifty Midcap150", "Nifty Midcap 50", "Nifty Midcap Select", "Nifty Midcap 100",
-                    "Nifty Smallcap 250", "Nifty Smallcap 50", "Nifty Smallcap 100", "Nifty Microcap 250",
-                    "Nifty LargeMidcap 250", "Nifty MidSmallcap 400", "Nifty India FPI 150", "India Vix"]
+    indices_list = [
+        "Nifty 50",
+        "Nifty Next 50",
+        "Nifty 100",
+        "Nifty 200",
+        "Nifty Total Market",
+        "Nifty 500",
+        "Nifty Midcap150",
+        "Nifty Midcap 50",
+        "Nifty Midcap Select",
+        "Nifty Midcap 100",
+        "Nifty Smallcap 250",
+        "Nifty Smallcap 50",
+        "Nifty Smallcap 100",
+        "Nifty Microcap 250",
+        "Nifty LargeMidcap 250",
+        "Nifty MidSmallcap 400",
+        "Nifty India FPI 150",
+        "India Vix"
+    ]
     index_constituent_list_urls = {
         "Nifty 50": "https://nsearchives.nseindia.com/content/indices/ind_nifty50list.csv",
         "Nifty Next 50": "https://nsearchives.nseindia.com/content/indices/ind_niftynext50list.csv",

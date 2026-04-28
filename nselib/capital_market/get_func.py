@@ -1,5 +1,6 @@
 import json
 import logging
+from nselib.request_maker import nse_urlfetch
 from io import BytesIO, StringIO
 
 import pandas as pd
@@ -9,10 +10,7 @@ from nselib.constants import india_vix_data_column, index_data_columns
 from nselib.errors import NSEdataNotFound
 from nselib.libutil import (
     cleaning_column_name,
-    default_header,
     derive_from_and_to_date,
-    header,
-    nse_urlfetch,
     validate_date_param,
 )
 
