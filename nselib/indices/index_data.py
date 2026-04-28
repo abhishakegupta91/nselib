@@ -1,6 +1,5 @@
 from io import BytesIO
 from nselib.indices import nse_config as conf
-from nselib.libutil import nse_urlfetch
 import pandas as pd
 from nselib.errors import (
     InvalidIndexCategoryError,
@@ -9,6 +8,7 @@ from nselib.errors import (
     NSEApiError,
 )
 import logging
+from nselib.request_maker import nse_urlfetch
 
 logger = logging.getLogger(__name__)
 

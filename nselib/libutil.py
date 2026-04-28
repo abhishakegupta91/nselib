@@ -1,32 +1,16 @@
 import os
-from datetime import datetime, timedelta, date
-import requests
+from datetime import date, datetime, timedelta
+
 import numpy as np
 import pandas as pd
 import logging
 from nselib.constants import equity_periods, dd_mm_yyyy
 import pandas_market_calendars as mcal
 from nselib.errors import CalenderNotFound
+from nselib.request_maker import nse_urlfetch
 
 logger = logging.getLogger(__name__)
 
-default_header = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
-}
-
-header = {
-    "referer": "https://www.nseindia.com/",
-    "Connection": "keep-alive",
-    "Cache-Control": "max-age=0",
-    "DNT": "1",
-    "Upgrade-Insecure-Requests": "1",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
-    "Sec-Fetch-User": "?1",
-    "Accept": "ext/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-    "Sec-Fetch-Site": "none",
-    "Sec-Fetch-Mode": "navigate",
-    "Accept-Language": "en-US,en;q=0.9,hi;q=0.8",
-}
 
 nse_calendar = mcal.get_calendar("NSE")
 
@@ -36,8 +20,6 @@ def validate_param_from_list(value: str, static_options_list: list):
         raise ValueError(
             f"'{value}' not a valid parameter :: select from {static_options_list}"
         )
-    else:
-        pass
 
 
 def validate_date_param(from_date: str, to_date: str, period: str):
@@ -54,7 +36,7 @@ def validate_date_param(from_date: str, to_date: str, period: str):
             if time_delta < 1:
                 raise ValueError("to_date should greater than from_date")
     except Exception as e:
-        print(e)
+        logger.error(f"Failed to validate date parameters: {e}", exc_info=e)
         raise ValueError(
             f"either or both from_date = {from_date} || to_date = {to_date} are not valid value"
         )
@@ -159,33 +141,8 @@ def cleaning_nse_symbol(symbol):
     return symbol.upper()
 
 
-def nse_urlfetch(url, origin_url="http://nseindia.com"):
-    """
-    Fetch data from an NSE URL using a session that mimics a real browser.
-
-    Args:
-        url (str): The target NSE API URL.
-        origin_url (str, optional): The origin URL to fetch cookies from initially. Defaults to "http://nseindia.com".
-
-    Returns:
-        requests.Response: The HTTP response object.
-
-    Example:
-        >>> from nselib import libutil
-        >>> response = libutil.nse_urlfetch('https://www.nseindia.com/api/holiday-master?type=trading')
-    """
-    logger.debug(f"Fetching cookies from origin_url: {origin_url}")
-    r_session = requests.session()
-    nse_live = r_session.get(origin_url, headers=default_header)
-    cookies = nse_live.cookies
-    logger.debug(f"Fetching data from url: {url}")
-    return r_session.get(url, headers=header, cookies=cookies)
-
-
 def get_nselib_path():
-    """
-    Extract isap file path
-    """
+    """Extract isap file path"""
     mydir = os.getcwd()
     return mydir.split(r"\nselib", 1)[0]
 
@@ -242,8 +199,3 @@ def trading_holiday_calendar():
     ]
     data_df["Product"] = np.select(condition, value, default="Unknown")
     return data_df
-
-
-# if __name__ == "__main__":
-#     data = derive_from_and_to_date('6M')
-#     print(trading_holiday_calendar())

@@ -1,6 +1,5 @@
-from nselib.libutil import header
-from nselib.libutil import default_header
 import logging
+from nselib.request_maker import nse_urlfetch
 import numpy as np
 import pandas as pd
 import zipfile
@@ -22,7 +21,6 @@ from nselib.derivatives.get_func import (
     get_nse_option_chain,
     get_option_price_volume_data,
     indices_list,
-    nse_urlfetch,
     validate_date_param,
     validate_param_from_list,
 )

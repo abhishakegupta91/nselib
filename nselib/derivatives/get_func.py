@@ -1,4 +1,5 @@
 import logging
+from nselib.request_maker import nse_urlfetch
 import pandas as pd
 import requests
 
@@ -8,9 +9,6 @@ from nselib.libutil import (
     cleaning_column_name,
     cleaning_nse_symbol,
     future_price_volume_data_column,
-    nse_urlfetch,
-    default_header,
-    header,
 )
 
 logger = logging.getLogger(__name__)
