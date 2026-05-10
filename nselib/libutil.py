@@ -1,14 +1,15 @@
 import logging
 import os
 from datetime import date, datetime, timedelta
+from typing import Optional
 
 import numpy as np
 import pandas as pd
 import pandas_market_calendars as mcal
 
-from nselib.errors import CalenderNotFound
-from nselib.request_maker import nse_urlfetch
-from nselib.utils.enums import DateFormatEnum
+from .errors import CalenderNotFound
+from .request_maker import nse_urlfetch
+from .utils.enums import DateFormatEnum
 
 logger = logging.getLogger(__name__)
 
@@ -23,9 +24,14 @@ def validate_param_from_list(value: str, static_options_list: list):
         )
 
 
-def validate_date_param(from_date: str, to_date: str, period: str):
+def validate_date_param(
+        from_date: Optional[str] = None,
+        to_date: Optional[str] = None,
+        period: Optional[str] = None):
+
     if not period and (not from_date or not to_date):
         raise ValueError(" Please provide the valid parameters")
+
     elif period and period.upper() not in EQUITY_PERIODS:
         raise ValueError(f"period = {period} is not a valid value")
 

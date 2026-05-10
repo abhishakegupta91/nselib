@@ -1,5 +1,6 @@
-from .capital_market_data import (
+from .api import (
     bhav_copy_equities,
+    bhav_copy_indices,
     bhav_copy_sme,
     bhav_copy_with_delivery,
     block_deals_data,
@@ -12,6 +13,7 @@ from .capital_market_data import (
     deliverable_position_data,
     equity_list,
     event_calendar_for_equity,
+    fii_dii_trading_activity,
     financial_results_for_equity,
     fno_equity_list,
     fno_index_list,
@@ -42,6 +44,7 @@ from .capital_market_data import (
 
 __all__ = [
     "bhav_copy_equities",
+    "bhav_copy_indices",
     "bhav_copy_sme",
     "bhav_copy_with_delivery",
     "block_deals_data",
@@ -54,6 +57,7 @@ __all__ = [
     "deliverable_position_data",
     "equity_list",
     "event_calendar_for_equity",
+    "fii_dii_trading_activity",
     "financial_results_for_equity",
     "fno_equity_list",
     "fno_index_list",
