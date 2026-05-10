@@ -8,7 +8,7 @@
 <p align="center">
   <a href="https://pypi.org/project/nselib/"><img src="https://img.shields.io/pypi/v/nselib?color=blue" alt="PyPI Version"></a>
   <a href="https://pypi.org/project/nselib/"><img src="https://img.shields.io/pypi/pyversions/nselib" alt="Python Versions"></a>
-  <a href="https://github.com/RuchiTanmay/nselib/blob/main/LICENSE"><img src="https://img.shields.io/github/license/RuchiTanmay/nselib" alt="License"></a>
+  <a href="https://github.com/abhishakegupta91/nselib/blob/main/LICENSE"><img src="https://img.shields.io/github/license/abhishakegupta91/nselib" alt="License"></a>
   <a href="https://pypi.org/project/nselib/"><img src="https://img.shields.io/pypi/dm/nselib?color=green" alt="Downloads"></a>
 </p>
 
@@ -24,6 +24,12 @@
 - **Corporate Filings** — Financial results, corporate actions, event calendars
 - **Market Activity** — Top gainers/losers, most active equities, total traded stocks, FII/DII activity
 - **Utilities** — Trading holiday calendar, India VIX historical data
+
+## 🆕 What's New in v3.1
+
+- **Architectural Refactor**: The `capital_market` module has been completely overhauled under the hood. All network operations are now cleanly encapsulated in `CapitalMarketHelper`, making the library faster and more robust.
+- **Smart Pagination**: Added automatic chunking for historical data endpoints, meaning you can pull multiple years of data without worrying about manual date slicing or hitting NSE API limits.
+- **Improved Tooling**: Complete Python type hints, modern docstrings with usage examples, and full Pylint compliance for the `capital_market` endpoints.
 
 ## 📦 Installation
 
