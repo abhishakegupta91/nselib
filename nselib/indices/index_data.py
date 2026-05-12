@@ -1,10 +1,9 @@
-import json
 import logging
 from io import BytesIO
-from pathlib import Path
 
 import pandas as pd
 
+from .index_config import NSE_INDICES_CONFIG
 from nselib.errors import (
     IndexDataNotFound,
     InvalidIndexCategoryError,
@@ -15,23 +14,8 @@ from nselib.request_maker import nse_urlfetch
 
 logger = logging.getLogger(__name__)
 
-_CONFIG_PATH = Path(__file__).parent / "nse_indices.json"
-
-
-def _load_config() -> dict:
-    """Load the index configuration from the JSON file.
-
-    Returns:
-        dict: Nested dictionary keyed by category → index name → URLs.
-    """
-    with open(_CONFIG_PATH, encoding="utf-8") as f:
-        return json.load(f)
-
-
-_CONFIG: dict = _load_config()
-
 # Valid categories derived from the JSON keys — no hardcoding
-VALID_CATEGORIES: list = list(_CONFIG.keys())
+VALID_CATEGORIES: list = list(NSE_INDICES_CONFIG.keys())
 
 
 def _validate(index_category: str, index_name: str) -> dict:
@@ -52,14 +36,14 @@ def _validate(index_category: str, index_name: str) -> dict:
         InvalidIndexCategoryError: If the category is not in the configuration.
         InvalidIndexError: If the index name is not found under the category.
     """
-    if index_category not in _CONFIG:
+    if index_category not in NSE_INDICES_CONFIG:
         logger.warning("Valid categories: %s", VALID_CATEGORIES)
         raise InvalidIndexCategoryError(
             f"'{index_category}' is an invalid index category. "
             f"Valid: {VALID_CATEGORIES}"
         )
 
-    category_data = _CONFIG[index_category]
+    category_data = NSE_INDICES_CONFIG[index_category]
     if index_name not in category_data:
         valid_names = list(category_data.keys())
         logger.warning(
@@ -97,13 +81,13 @@ def index_list(index_category: str = "BroadMarketIndices") -> list:
         >>> from nselib import indices
         >>> list_of_indices = indices.index_list('BroadMarketIndices')
     """
-    if index_category not in _CONFIG:
+    if index_category not in NSE_INDICES_CONFIG:
         logger.warning("Valid categories: %s", VALID_CATEGORIES)
         raise InvalidIndexCategoryError(
             f"'{index_category}' is an invalid index category. "
             f"Valid: {VALID_CATEGORIES}"
         )
-    return list(_CONFIG[index_category].keys())
+    return list(NSE_INDICES_CONFIG[index_category].keys())
 
 
 def constituent_stock_list(
