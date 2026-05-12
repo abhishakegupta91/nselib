@@ -597,22 +597,22 @@ def _extract_option_side(record: dict, side: str, full_mode: bool) -> dict:
     Returns:
         Dict with prefixed keys (e.g., ``CALLS_OI`` or ``PUTS_LTP``).
     """
-    prefix = "CALLS" if side == "CE" else "PUTS"
+    prefix = "CE" if side == "CE" else "PE"
     data = record.get(side, {})
     result = {
-        f"{prefix}_OI": data.get("openInterest", 0),
-        f"{prefix}_Chng_in_OI": data.get("changeinOpenInterest", 0),
-        f"{prefix}_Volume": data.get("totalTradedVolume", 0),
-        f"{prefix}_IV": data.get("impliedVolatility", 0),
-        f"{prefix}_LTP": data.get("lastPrice", 0),
-        f"{prefix}_Net_Chng": data.get("change", 0),
+        f"{prefix}_openInterest": data.get("openInterest", 0),
+        f"{prefix}_changeinOpenInterest": data.get("changeinOpenInterest", 0),
+        f"{prefix}_totalTradedVolume": data.get("totalTradedVolume", 0),
+        f"{prefix}_impliedVolatility": data.get("impliedVolatility", 0),
+        f"{prefix}_lastPrice": data.get("lastPrice", 0),
+        f"{prefix}_change": data.get("change", 0),
     }
     if full_mode:
         result.update({
-            f"{prefix}_Bid_Qty": data.get("buyQuantity1", 0),
-            f"{prefix}_Bid_Price": data.get("buyPrice1", 0),
-            f"{prefix}_Ask_Price": data.get("sellPrice1", 0),
-            f"{prefix}_Ask_Qty": data.get("sellQuantity1", 0),
+            f"{prefix}_bidQty": data.get("buyQuantity1", 0),
+            f"{prefix}_bidprice": data.get("buyPrice1", 0),
+            f"{prefix}_askPrice": data.get("sellPrice1", 0),
+            f"{prefix}_askQty": data.get("sellQuantity1", 0),
         })
     return result
 
@@ -643,31 +643,36 @@ def nse_live_option_chain(
         symbol, expiry_date, oi_mode,
     )
     payload = fetch_option_chain(symbol, expiry_date).json()
+    if "records" not in payload or "data" not in payload["records"]:
+        logger.error(
+            "Option chain data not found in NSE response for symbol=%s. Payload keys: %s",
+            symbol, list(payload.keys())
+        )
+        raise NSEdataNotFound(f"Option chain data for {symbol} not found or API error.")
+
     full_mode = oi_mode == "full"
     rows = []
 
     for record in payload["records"]["data"]:
-        if expiry_date and record.get("expiryDates") != expiry_date:
+        if expiry_date and record.get("expiryDate") != expiry_date:
             continue
 
         row = {
-            "Fetch_Time": payload["records"]["timestamp"],
-            "Symbol": symbol,
-            "Expiry_Date": record.get("expiryDates"),
-            "Strike_Price": record.get("strikePrice"),
+            "fetchTime": payload["records"]["timestamp"],
+            "symbol": symbol,
+            "expiryDate": record.get("expiryDate"),
+            "strikePrice": record.get("strikePrice"),
         }
         row.update(_extract_option_side(record, "CE", full_mode))
         row.update(_extract_option_side(record, "PE", full_mode))
         rows.append(row)
 
-    if rows:
-        return pd.DataFrame(rows)
     # Return empty DataFrame with expected columns
-    base_cols = ["Fetch_Time", "Symbol", "Expiry_Date", "Strike_Price"]
-    side_cols = ["OI", "Chng_in_OI", "Volume", "IV", "LTP", "Net_Chng"]
-    bid_ask = ["Bid_Qty", "Bid_Price", "Ask_Price", "Ask_Qty"] if full_mode else []
+    base_cols = ["fetchTime", "symbol", "expiryDate", "strikePrice"]
+    side_cols = ["openInterest", "changeinOpenInterest", "totalTradedVolume", "impliedVolatility", "lastPrice", "change"]
+    bid_ask = ["bidQty", "bidprice", "askPrice", "askQty"] if full_mode else []
     columns = base_cols
-    for prefix in ["CALLS", "PUTS"]:
+    for prefix in ["CE", "PE"]:
         columns += [f"{prefix}_{c}" for c in side_cols + bid_ask]
     return pd.DataFrame(columns=columns)
 
