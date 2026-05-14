@@ -11,7 +11,7 @@ import re
 import pandas as pd
 import requests
 
-from nselib.libutil import default_header
+from .request_maker import default_header
 
 REPORT_DATE_FORMAT = "%d-%b-%Y"
 PRODUCTION_BASE_URL = "https://www.fpi.nsdl.co.in/web/Reports"

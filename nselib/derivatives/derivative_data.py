@@ -652,29 +652,41 @@ def nse_live_option_chain(
 
     full_mode = oi_mode == "full"
     rows = []
+    total_records = len(payload["records"]["data"])
+    logger.debug("Processing %d records from NSE response for symbol=%s.", total_records, symbol)
 
     for record in payload["records"]["data"]:
-        if expiry_date and record.get("expiryDate") != expiry_date:
+        if expiry_date and record.get("expiryDates") != expiry_date:
             continue
 
         row = {
             "fetchTime": payload["records"]["timestamp"],
             "symbol": symbol,
-            "expiryDate": record.get("expiryDate"),
+            "expiryDate": record.get("expiryDates"),
             "strikePrice": record.get("strikePrice"),
         }
         row.update(_extract_option_side(record, "CE", full_mode))
         row.update(_extract_option_side(record, "PE", full_mode))
         rows.append(row)
 
-    # Return empty DataFrame with expected columns
+    if not rows:
+        logger.warning(
+            "No rows matched for symbol=%s, expiry=%s (total records in payload: %d).",
+            symbol, expiry_date, total_records,
+        )
+    else:
+        logger.debug(
+            "Built %d strike rows for symbol=%s, expiry=%s.",
+            len(rows), symbol, expiry_date,
+        )
+
     base_cols = ["fetchTime", "symbol", "expiryDate", "strikePrice"]
     side_cols = ["openInterest", "changeinOpenInterest", "totalTradedVolume", "impliedVolatility", "lastPrice", "change"]
     bid_ask = ["bidQty", "bidprice", "askPrice", "askQty"] if full_mode else []
     columns = base_cols
     for prefix in ["CE", "PE"]:
         columns += [f"{prefix}_{c}" for c in side_cols + bid_ask]
-    return pd.DataFrame(columns=columns)
+    return pd.DataFrame(rows, columns=columns)
 
 
 def fno_security_in_ban_period(trade_date: str) -> list:

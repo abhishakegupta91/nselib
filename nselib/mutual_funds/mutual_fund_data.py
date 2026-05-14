@@ -9,7 +9,8 @@ from urllib.parse import urljoin
 import pandas as pd
 import requests
 
-from nselib.libutil import NSEdataNotFound, default_header
+from ..errors import NSEdataNotFound
+from ..request_maker import default_header
 
 AMFI_MONTHLY_PAGE_URL = "https://www.amfiindia.com/research-information/amfi-monthly"
 _AMFI_REPORT_LINK_PATTERN = re.compile(

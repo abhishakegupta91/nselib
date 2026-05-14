@@ -129,10 +129,8 @@ def fetch_option_chain(symbol: str, expiry_date: str):
     asset_type = "Indices" if any(idx in symbol for idx in INDICES) else "Equity"
     logger.debug("Symbol '%s' identified as %s.", symbol, asset_type)
 
-    url = (
-        f"https://www.nseindia.com/api/option-chain-v3?"
-        f"type={asset_type}&symbol={symbol}&expiry={expiry_date}"
-    )
+    base = f"https://www.nseindia.com/api/option-chain-v3?type={asset_type}&symbol={symbol}"
+    url = f"{base}&expiry={expiry_date}" if expiry_date else base
     response = nse_urlfetch(url, origin_url=origin_url)
     logger.debug("Successfully retrieved option chain data.")
     return response
