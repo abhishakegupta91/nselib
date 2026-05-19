@@ -98,6 +98,8 @@ class CapitalMarketHelper:
         df = pd.DataFrame(data_json.get("data", []))
         if not df.empty:
             df.columns = cleaning_column_name(df.columns)
+            # Remove 'EOD_' prefix added by the updated NSE API
+            df.columns = [col[4:] if col.startswith("EOD_") else col for col in df.columns]
             from .constants import INDIA_VIX_DATA_COLUMN
             return df[INDIA_VIX_DATA_COLUMN]
         return df
