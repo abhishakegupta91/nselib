@@ -18,7 +18,7 @@ class CapitalMarketHelper:
     """
     A helper class for making network requests to NSE Capital Market endpoints.
     """
-    ORIGIN_URL_STAGING = "https://nsewebsite-staging.nseindia.com"
+    ORIGIN_URL_STAGING = "https://www.nseindia.com"
     BASE_URL = "https://www.nseindia.com"
     BASE_API_URL = "https://www.nseindia.com/api"
 
@@ -121,22 +121,60 @@ class CapitalMarketHelper:
         return df
 
     def get_bulk_deal_data(self, from_date: str, to_date: str) -> pd.DataFrame:
-        endpoint = "/historicalOR/bulk-deals"
-        origin_url = f"{self.ORIGIN_URL_STAGING}/report-detail/eq_security"
-        params = {"from": from_date, "to": to_date, "csv": "true"}
-        return self._fetch_csv(endpoint, origin_url, "Resource not available for bulk_deal_data", params=params)
+        endpoint = "/historicalOR/bulk-block-short-deals"
+        origin_url = f"{self.ORIGIN_URL_STAGING}/report-detail/display-bulk-and-block-deals"
+        params = {"optionType": "bulk_deals", "from": from_date, "to": to_date}
+        data_json = self._fetch_json(endpoint, origin_url, "Resource not available for bulk_deal_data", params=params)
+        df = pd.DataFrame(data_json.get("data", []))
+        if not df.empty:
+            column_mapping = {
+                "BD_DT_DATE": "Date",
+                "BD_SYMBOL": "Symbol",
+                "BD_SCRIP_NAME": "SecurityName",
+                "BD_CLIENT_NAME": "ClientName",
+                "BD_BUY_SELL": "Buy/Sell",
+                "BD_QTY_TRD": "QuantityTraded",
+                "BD_TP_WATP": "TradePrice/Wght.Avg.Price",
+                "BD_REMARKS": "Remarks",
+            }
+            df = df.rename(columns=column_mapping)
+        return df
 
     def get_block_deals_data(self, from_date: str, to_date: str) -> pd.DataFrame:
-        endpoint = "/historicalOR/block-deals"
-        origin_url = f"{self.ORIGIN_URL_STAGING}/report-detail/eq_security"
-        params = {"from": from_date, "to": to_date, "csv": "true"}
-        return self._fetch_csv(endpoint, origin_url, "Resource not available for block_deals_data", params=params)
+        endpoint = "/historicalOR/bulk-block-short-deals"
+        origin_url = f"{self.ORIGIN_URL_STAGING}/report-detail/display-bulk-and-block-deals"
+        params = {"optionType": "block_deals", "from": from_date, "to": to_date}
+        data_json = self._fetch_json(endpoint, origin_url, "Resource not available for block_deals_data", params=params)
+        df = pd.DataFrame(data_json.get("data", []))
+        if not df.empty:
+            column_mapping = {
+                "BD_DT_DATE": "Date",
+                "BD_SYMBOL": "Symbol",
+                "BD_SCRIP_NAME": "SecurityName",
+                "BD_CLIENT_NAME": "ClientName",
+                "BD_BUY_SELL": "Buy/Sell",
+                "BD_QTY_TRD": "QuantityTraded",
+                "BD_TP_WATP": "TradePrice/Wght.Avg.Price",
+                "BD_REMARKS": "Remarks",
+            }
+            df = df.rename(columns=column_mapping)
+        return df
 
     def get_short_selling_data(self, from_date: str, to_date: str) -> pd.DataFrame:
-        endpoint = "/historicalOR/short-selling"
-        origin_url = f"{self.ORIGIN_URL_STAGING}/report-detail/eq_security"
-        params = {"from": from_date, "to": to_date, "csv": "true"}
-        return self._fetch_csv(endpoint, origin_url, "Resource not available for short_selling_data", params=params)
+        endpoint = "/historicalOR/bulk-block-short-deals"
+        origin_url = f"{self.ORIGIN_URL_STAGING}/report-detail/display-bulk-and-block-deals"
+        params = {"optionType": "short_selling", "from": from_date, "to": to_date}
+        data_json = self._fetch_json(endpoint, origin_url, "Resource not available for short_selling_data", params=params)
+        df = pd.DataFrame(data_json.get("data", []))
+        if not df.empty:
+            column_mapping = {
+                "SS_DATE": "Date",
+                "SS_SYMBOL": "Symbol",
+                "SS_NAME": "SecurityName",
+                "SS_QTY": "Quantity",
+            }
+            df = df.rename(columns=column_mapping)
+        return df
 
     def get_bhav_copy_with_delivery(self, use_date: str) -> pd.DataFrame:
         url = f"https://nsearchives.nseindia.com/products/content/sec_bhavdata_full_{use_date}.csv"
