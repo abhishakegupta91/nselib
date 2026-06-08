@@ -15,3 +15,9 @@ pytest
 - **Internal Helper**: Network requests are encapsulated in `CapitalMarketHelper`.
 
 For the full API reference and examples, refer to `README.md`.
+
+## 🤖 Agent Guidelines (`nselib-agent`)
+- **Execution**: Coding only. Nothing runs locally; all runs on algoserver.
+- **Git**: Separate repo. Commit locally (2-3+ lines descriptive message), push, pull on algoserver. No scp.
+- **Design**: NSE scraping / derivatives downloader. Encapsulate calls in `CapitalMarketHelper`. Handle pagination safely.
+
