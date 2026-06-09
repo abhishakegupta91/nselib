@@ -40,6 +40,7 @@ from .api import (
     var_begin_day,
     var_end_of_day,
     week_52_high_low_report,
+    corporate_announcements,
 )
 
 __all__ = [
@@ -84,4 +85,5 @@ __all__ = [
     "var_begin_day",
     "var_end_of_day",
     "week_52_high_low_report",
+    "corporate_announcements",
 ]

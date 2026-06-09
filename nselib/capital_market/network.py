@@ -409,3 +409,11 @@ class CapitalMarketHelper:
         if req.status_code == 200:
             return req.json()
         raise NSEdataNotFound("Resource not available")
+
+    def get_corporate_announcements(self, payload: str) -> list:
+        url = f"{self.BASE_API_URL}/corporate-announcements?index=equities&{payload}"
+        origin = f"{self.BASE_URL}/market-data/corporate-announcements"
+        req = nse_urlfetch(url, origin_url=origin)
+        if req.status_code == 200:
+            return req.json()
+        raise NSEdataNotFound("Resource not available")

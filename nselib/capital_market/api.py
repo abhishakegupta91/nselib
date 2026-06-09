@@ -997,6 +997,31 @@ def corporate_actions_for_equity(
     return master_data_df
 
 
+def corporate_announcements(
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None,
+    period: Optional[str] = None,
+):
+    """Get corporate announcements for equities as per
+        https://www.nseindia.com/companies-listing/corporate-filings-announcements
+
+    :param from_date: '17-03-2022' ('dd-mm-YYYY')
+    :param to_date: '17-06-2023' ('dd-mm-YYYY')
+    :param period: use one {'1D': last day data,
+                            '1W': for last 7 days data,
+                            '1M': from last month same date,
+                            '6M': last 6-month data,
+                            '1Y': from last year same date)
+    :return: list of dicts
+    """
+    validate_date_param(from_date, to_date, period)
+    from_date, to_date = derive_from_and_to_date(
+        from_date=from_date, to_date=to_date, period=period
+    )
+    payload = f"from_date={from_date}&to_date={to_date}"
+    return cm_helper.get_corporate_announcements(payload)
+
+
 def event_calendar_for_equity(
     from_date: Optional[str] = None,
     to_date: Optional[str] = None,
