@@ -105,19 +105,22 @@ class CapitalMarketHelper:
         return df
 
     def get_index_data(self, index: str, from_date: str, to_date: str) -> pd.DataFrame:
-        endpoint = "/historicalOR/vixhistory"
+        endpoint = "/historicalOR/indicesHistory"
         origin_url = f"{self.ORIGIN_URL_STAGING}/report-detail/eq_security"
         params = {
             "from": from_date,
             "to": to_date,
-            "index": index,
+            "indexType": index,
             "csv": "true"
         }
         data_json = self._fetch_json(endpoint, origin_url, "Resource not available", params=params)
         df = pd.DataFrame(data_json.get("data", []))
         if not df.empty:
             df.columns = cleaning_column_name(df.columns)
-            df = df.drop(columns=["_id", "EOD_INDEX_NAME"], errors="ignore")
+            # Remove 'EOD_' and 'HIT_' prefixes added by the NSE API
+            df.columns = [col[4:] if (col.startswith("EOD_") or col.startswith("HIT_")) else col for col in df.columns]
+            from .constants import INDEX_DATA_COLUMNS
+            return df[INDEX_DATA_COLUMNS]
         return df
 
     def get_bulk_deal_data(self, from_date: str, to_date: str) -> pd.DataFrame:
