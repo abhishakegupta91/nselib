@@ -3,6 +3,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 import logging
+import threading
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,7 @@ header = {
 
 class NSEFetcher:
     _session = None
+    _lock = threading.Lock()
 
     @classmethod
     def get_session(cls) -> requests.Session:
@@ -63,11 +65,23 @@ class NSEFetcher:
         session = cls.get_session()
 
         if origin_url:
-            logger.debug(f"Fetching cookies from origin_url: {origin_url}")
-            session.get(origin_url, headers=default_header, timeout=timeout)
+            with cls._lock:
+                if not session.cookies:
+                    logger.debug(f"Fetching cookies from origin_url: {origin_url}")
+                    session.get(origin_url, headers=default_header, timeout=timeout)
 
         logger.debug(f"Fetching data from url: {url}")
-        return session.get(url, headers=header, timeout=timeout)
+        response = session.get(url, headers=header, timeout=timeout)
+
+        # Self-healing: if cookies expired, clear and retry once
+        if response.status_code in (401, 403) and origin_url:
+            with cls._lock:
+                logger.warning(f"Got {response.status_code} from {url}. Clearing cookies and retrying.")
+                session.cookies.clear()
+                session.get(origin_url, headers=default_header, timeout=timeout)
+            response = session.get(url, headers=header, timeout=timeout)
+
+        return response
 
 
 def nse_urlfetch(url: str, origin_url: str = "https://www.nseindia.com", timeout: int = 10) -> requests.Response:
