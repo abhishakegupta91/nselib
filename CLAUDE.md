@@ -1,23 +1,51 @@
-# nselib
+# NSELib
 
-A Python library to fetch publicly available data from NSE India.
+Python library for fetching publicly available data from NSE India. Used by `tb-collector`.
 
-## Test and Build Commands
+## Commands
+
 ```bash
-# Run tests
-pytest
+venv/bin/pytest     # tests
+pip install -e .    # install as editable
 ```
 
-## Critical Pointers
-- **Data Modules**: `capital_market`, `derivatives`, `cash_market`, `indices`, `debt`.
-- **Paging**: Implements smart pagination for historical endpoints.
-- **Dates**: Accepts either `from_date` + `to_date` (dd-mm-YYYY) or `period` ('1M', '1Y').
-- **Internal Helper**: Network requests are encapsulated in `CapitalMarketHelper`.
+## Data Modules
 
-For the full API reference and examples, refer to `README.md`.
+| Module | Contents |
+|--------|----------|
+| `capital_market` | Equity prices, corporate actions, bulk deals |
+| `derivatives` | Option chains, futures OI, PCR |
+| `cash_market` | Intraday data |
+| `indices` | Index constituents, index OHLCV |
+| `debt` | Bond data |
 
-## 🤖 Agent Guidelines (`nselib-agent`)
-- **Execution**: Coding only. Nothing runs locally; all runs on algoserver.
-- **Git**: Separate repo. Commit locally (2-3+ lines descriptive message), push, pull on algoserver. No scp.
-- **Design**: NSE scraping / derivatives downloader. Encapsulate calls in `CapitalMarketHelper`. Handle pagination safely.
+## Usage
 
+```python
+from nselib import capital_market, derivatives
+
+# Equity history — use dd-mm-YYYY date format
+df = capital_market.price_volume_and_deliverable_position_data(
+    symbol="RELIANCE", from_date="01-01-2026", to_date="30-06-2026"
+)
+
+# Or use period shorthand
+df = capital_market.price_volume_and_deliverable_position_data(
+    symbol="RELIANCE", period="1Y"
+)
+
+# Option chain
+chain = derivatives.nse_live_option_chain(symbol="NIFTY")
+```
+
+## Conventions
+
+- **All HTTP**: encapsulated in `CapitalMarketHelper` — handles NSE session/cookie management. Never call requests/httpx directly.
+- **Dates**: `from_date` + `to_date` as `dd-mm-YYYY`, or `period` as `'1M'`, `'3M'`, `'1Y'`
+- **Pagination**: historical endpoints auto-paginate — do not manually chunk date ranges
+- **Rate limiting**: NSE blocks aggressive scrapers. Add delays between batch calls in callers.
+- **None handling**: NSE returns empty/None on market holidays — always handle `NoneType` responses
+
+## Git
+
+Separate sub-repo. Commit locally → push → `ssh algoserver "cd /home/abhi-trade/nx-trade/libs/nselib && git pull"`.
