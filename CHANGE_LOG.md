@@ -1,5 +1,5 @@
-# CHANGE LOG
-#### All the changes are listed...
+### Version: 3.1.5 [30/07/2026]
+* URL-encode query parameters in `_fetch_json` and `_fetch_csv` to support index names containing `&` (e.g. `NIFTY OIL & GAS`).
 
 ### Version: 2.5.0 [24/04/2026]
 * New data functions available for cash market data.
