@@ -14,6 +14,9 @@ logger = logging.getLogger(__name__)
 def cleaning_column_name(columns: pd.Index) -> list:
     return [name.replace(" ", "") for name in columns]
 
+import urllib.parse
+
+
 class CapitalMarketHelper:
     """
     A helper class for making network requests to NSE Capital Market endpoints.
@@ -25,7 +28,7 @@ class CapitalMarketHelper:
     def _fetch_csv(self, endpoint: str, origin_url: str, error_msg: str, params: Optional[dict] = None) -> pd.DataFrame:
         url = f"{self.BASE_API_URL}{endpoint}"
         if params:
-            query = "&".join(f"{k}={v}" for k, v in params.items())
+            query = "&".join(f"{k}={urllib.parse.quote(str(v))}" for k, v in params.items())
             url = f"{url}?{query}"
             
         req = nse_urlfetch(url, origin_url=origin_url)
@@ -39,7 +42,7 @@ class CapitalMarketHelper:
     def _fetch_json(self, endpoint: str, origin_url: str, error_msg: str, params: Optional[dict] = None) -> dict:
         url = f"{self.BASE_API_URL}{endpoint}"
         if params:
-            query = "&".join(f"{k}={v}" for k, v in params.items())
+            query = "&".join(f"{k}={urllib.parse.quote(str(v))}" for k, v in params.items())
             url = f"{url}?{query}"
             
         req = nse_urlfetch(url, origin_url=origin_url)
