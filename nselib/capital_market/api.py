@@ -1,5 +1,6 @@
 import datetime as dt
 import logging
+import time
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from io import BytesIO
@@ -9,6 +10,7 @@ import numpy as np
 import pandas as pd
 import requests
 
+from ..request_maker import NSEFetcher
 from .constants import (
     BLOCK_DEALS_DATA_COLUMNS,
     BULK_DEAL_DATA_COLUMNS,
@@ -30,6 +32,10 @@ from ..utils.enums import DateFormatEnum
 
 cm_helper = CapitalMarketHelper()
 logger = logging.getLogger(__name__)
+
+# financial_results_for_equity fetches one XBRL filing per row in a tight loop —
+# this spaces those calls out so a wide date range doesn't read as scraping abuse.
+XBRL_FETCH_DELAY_SECONDS = 0.3
 
 
 def _paginated_fetch(
@@ -897,9 +903,14 @@ def financial_results_for_equity(
         )
     )
     fin_df, df = pd.DataFrame(), pd.DataFrame()
-    for row in master_data_df.itertuples(index=False):
+    session = NSEFetcher.get_session()
+    for i, row in enumerate(master_data_df.itertuples(index=False)):
+        if i > 0:
+            # One XBRL filing fetched per row — space calls out so a wide date
+            # range doesn't hammer NSE's archive host in a tight loop.
+            time.sleep(XBRL_FETCH_DELAY_SECONDS)
         try:
-            response_ = requests.get(row.xbrl, headers=headers)
+            response_ = session.get(row.xbrl, headers=headers, timeout=10)
             response_.raise_for_status()
 
             root = ET.fromstring(response_.content)
