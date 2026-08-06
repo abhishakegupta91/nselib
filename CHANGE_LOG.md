@@ -1,3 +1,9 @@
+### Version: 3.1.6 [06/08/2026]
+* `equity_list()` now includes an `ISIN NUMBER` column (previously fetched from NSE internally but dropped before returning).
+* `financial_results_for_equity()` now fetches XBRL filings through the shared retrying session instead of a bare `requests.get()`, with a small delay between rows.
+* Declared `xlrd`, `pyppeteer`, and `pdfplumber` as real install dependencies (used in code, previously undeclared in `setup.py`); moved `pytest`/`pytest-cov` to a `test` extras group.
+* Synced `__init__.__version__` with `setup.py`'s version (was still reporting 3.1.4 after the last two releases).
+
 ### Version: 3.1.5 [30/07/2026]
 * URL-encode query parameters in `_fetch_json` and `_fetch_csv` to support index names containing `&` (e.g. `NIFTY OIL & GAS`).
 
