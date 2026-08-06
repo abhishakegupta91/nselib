@@ -1,6 +1,7 @@
 numpy
 pandas>=2.0.0
 pandas_market_calendars
+pdfplumber
 pypdf>=4.0.0
 pyppeteer
 pytest
