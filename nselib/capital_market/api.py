@@ -442,9 +442,19 @@ def equity_list():
     """
     logger.debug("Fetching data for equity_list")
     data_df = cm_helper.get_equity_list()
-    return data_df[
-        ["SYMBOL", "NAME OF COMPANY", " SERIES", " DATE OF LISTING", " FACE VALUE"]
-    ]
+    columns = ["SYMBOL", "NAME OF COMPANY", " SERIES", " DATE OF LISTING", " FACE VALUE"]
+
+    # NSE's EQUITY_L.csv header is inconsistently spaced (some names have a
+    # leading space, some don't) — resolve the ISIN column by content rather
+    # than assuming its exact spelling, and normalize it to "ISIN NUMBER" in
+    # the output so callers get a stable name regardless of NSE's formatting.
+    isin_col = next((c for c in data_df.columns if "ISIN" in c.upper()), None)
+    if not isin_col:
+        logger.warning("ISIN column not found in NSE equity master response.")
+        return data_df[columns]
+
+    result = data_df[columns + [isin_col]]
+    return result.rename(columns={isin_col: "ISIN NUMBER"})
 
 
 def fno_equity_list():
