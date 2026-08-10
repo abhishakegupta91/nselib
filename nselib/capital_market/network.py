@@ -139,7 +139,19 @@ class CapitalMarketHelper:
         df = pd.DataFrame(data_json.get("data", []))
         if not df.empty:
             df.columns = cleaning_column_name(df.columns)
-            df.columns = [col[4:] if (col.startswith("EOD_") or col.startswith("HIT_")) else col for col in df.columns]
+            rename_map = {
+                "IY_INDEX": "INDEX_NAME",
+                "INDEX": "INDEX_NAME",
+                "IY_DT": "TIMESTAMP",
+                "DT": "TIMESTAMP",
+                "IY_PE": "P_E",
+                "PE": "P_E",
+                "IY_PB": "P_B",
+                "PB": "P_B",
+                "IY_DY": "DIV_YIELD",
+                "DY": "DIV_YIELD",
+            }
+            df = df.rename(columns=rename_map)
             valid_cols = [c for c in INDEX_YIELD_DATA_COLUMNS if c in df.columns]
             if valid_cols:
                 return df[valid_cols]
