@@ -126,6 +126,26 @@ class CapitalMarketHelper:
             return df[INDEX_DATA_COLUMNS]
         return df
 
+    def get_indices_yield(self, index: str, from_date: str, to_date: str) -> pd.DataFrame:
+        endpoint = "/historicalOR/indicesYield"
+        origin_url = f"{self.ORIGIN_URL_STAGING}/reports-indices-yield"
+        params = {
+            "from": from_date,
+            "to": to_date,
+            "indexType": index,
+        }
+        data_json = self._fetch_json(endpoint, origin_url, "Resource not available for indicesYield", params=params)
+        df = pd.DataFrame(data_json.get("data", []))
+        if not df.empty:
+            df.columns = cleaning_column_name(df.columns)
+            df.columns = [col[4:] if (col.startswith("EOD_") or col.startswith("HIT_")) else col for col in df.columns]
+            from .constants import INDEX_YIELD_DATA_COLUMNS
+            valid_cols = [c for c in INDEX_YIELD_DATA_COLUMNS if c in df.columns]
+            if valid_cols:
+                return df[valid_cols]
+        return df
+
+
     def get_bulk_deal_data(self, from_date: str, to_date: str) -> pd.DataFrame:
         endpoint = "/historicalOR/bulk-block-short-deals"
         origin_url = f"{self.ORIGIN_URL_STAGING}/report-detail/display-bulk-and-block-deals"

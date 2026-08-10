@@ -104,3 +104,12 @@ VAR_COLUMNS = [
     "AdhocMargin",
     "ApplicableMarginRate",
 ]
+
+INDEX_YIELD_DATA_COLUMNS = [
+    "INDEX_NAME",
+    "TIMESTAMP",
+    "P_E",
+    "P_B",
+    "DIV_YIELD",
+]
+

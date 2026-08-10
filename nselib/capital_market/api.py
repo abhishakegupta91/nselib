@@ -266,6 +266,31 @@ def index_data(
     )
 
 
+def index_yield_data(
+    index: str,
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None,
+    period: Optional[str] = None,
+):
+    """Get historical index yield data set (P/E, P/B, Div Yield) for the specific time period.
+
+    :param index: 'NIFTY 50'/'NIFTY BANK'
+    :param from_date: '17-03-2022' ('dd-mm-YYYY')
+    :param to_date: '17-06-2023' ('dd-mm-YYYY')
+    :param period: use one {'1D', '1W', '1M', '6M', '1Y'}
+    :return: pandas.DataFrame
+    """
+    logger.debug("Fetching data for index_yield_data")
+    validate_date_param(from_date, to_date, period)
+    from_date, to_date = derive_from_and_to_date(
+        from_date=from_date, to_date=to_date, period=period
+    )
+    return _paginated_fetch(
+        from_date, to_date, cm_helper.get_indices_yield, [], index=index
+    )
+
+
+
 def bulk_deal_data(
     from_date: Optional[str] = None,
     to_date: Optional[str] = None,
