@@ -8,6 +8,7 @@ import requests
 
 from ..errors import NSEdataNotFound
 from ..request_maker import default_header, nse_urlfetch
+from .constants import INDEX_YIELD_DATA_COLUMNS
 
 logger = logging.getLogger(__name__)
 
@@ -139,7 +140,6 @@ class CapitalMarketHelper:
         if not df.empty:
             df.columns = cleaning_column_name(df.columns)
             df.columns = [col[4:] if (col.startswith("EOD_") or col.startswith("HIT_")) else col for col in df.columns]
-            from .constants import INDEX_YIELD_DATA_COLUMNS
             valid_cols = [c for c in INDEX_YIELD_DATA_COLUMNS if c in df.columns]
             if valid_cols:
                 return df[valid_cols]

@@ -1,5 +1,3 @@
-from unittest.mock import MagicMock, patch
-import pandas as pd
 from nselib import capital_market
 
 
