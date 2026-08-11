@@ -107,19 +107,11 @@ def price_volume_and_deliverable_position_data(
 
     if not nse_df.empty:
         nse_df = nse_df.fillna("-").dropna(axis=1, how="all")
-        nse_df["TotalTradedQuantity"] = pd.to_numeric(
-            nse_df["TotalTradedQuantity"].astype(str).str.replace(",", ""),
-            errors="coerce",
-        )
-        nse_df["TurnoverInRs"] = pd.to_numeric(
-            nse_df["TurnoverInRs"].astype(str).str.replace(",", ""), errors="coerce"
-        )
-        nse_df["No.ofTrades"] = pd.to_numeric(
-            nse_df["No.ofTrades"].astype(str).str.replace(",", ""), errors="coerce"
-        )
-        nse_df["DeliverableQty"] = pd.to_numeric(
-            nse_df["DeliverableQty"].astype(str).str.replace(",", ""), errors="coerce"
-        )
+        for col in ["TotalTradedQuantity", "TurnoverInRs", "No.ofTrades", "DeliverableQty"]:
+            if col in nse_df.columns:
+                nse_df[col] = pd.to_numeric(
+                    nse_df[col].astype(str).str.replace(",", ""), errors="coerce"
+                )
     return nse_df
 
 
