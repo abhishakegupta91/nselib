@@ -653,17 +653,27 @@ def nse_live_option_chain(
     full_mode = oi_mode == "full"
     rows = []
     total_records = len(payload["records"]["data"])
+    # Top-level underlyingValue (fallback when per-record CE/PE dicts lack it)
+    top_level_underlying = payload["records"].get("underlyingValue", 0)
     logger.debug("Processing %d records from NSE response for symbol=%s.", total_records, symbol)
 
     for record in payload["records"]["data"]:
         if expiry_date and record.get("expiryDates") != expiry_date:
             continue
 
+        # Extract underlyingValue: prefer per-record CE/PE value, fall back to top-level
+        underlying_val = (
+            record.get("CE", {}).get("underlyingValue")
+            or record.get("PE", {}).get("underlyingValue")
+            or top_level_underlying
+        )
+
         row = {
             "fetchTime": payload["records"]["timestamp"],
             "symbol": symbol,
             "expiryDate": record.get("expiryDates"),
             "strikePrice": record.get("strikePrice"),
+            "underlyingValue": underlying_val,
         }
         row.update(_extract_option_side(record, "CE", full_mode))
         row.update(_extract_option_side(record, "PE", full_mode))
@@ -680,7 +690,7 @@ def nse_live_option_chain(
             len(rows), symbol, expiry_date,
         )
 
-    base_cols = ["fetchTime", "symbol", "expiryDate", "strikePrice"]
+    base_cols = ["fetchTime", "symbol", "expiryDate", "strikePrice", "underlyingValue"]
     side_cols = ["openInterest", "changeinOpenInterest", "totalTradedVolume", "impliedVolatility", "lastPrice", "change"]
     bid_ask = ["bidQty", "bidprice", "askPrice", "askQty"] if full_mode else []
     columns = base_cols
