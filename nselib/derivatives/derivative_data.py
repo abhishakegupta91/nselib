@@ -617,6 +617,27 @@ def _extract_option_side(record: dict, side: str, full_mode: bool) -> dict:
     return result
 
 
+def chain_totals(payload: dict) -> dict:
+    """The exchange's own OI and volume totals for the chain it returned.
+
+    NSE publishes these alongside the strikes, so they cover every listed
+    strike — including the deep out-of-the-money ones a caller that windows
+    strikes around spot never sees, and which summing the returned rows
+    therefore cannot reproduce. ``filtered`` is scoped to the requested
+    expiry; ``records`` covers every expiry and is the fallback when no
+    expiry was asked for.
+    """
+    scope = payload.get("filtered") or payload.get("records") or {}
+    ce = scope.get("CE") or {}
+    pe = scope.get("PE") or {}
+    return {
+        "call_oi": int(ce.get("totOI") or 0),
+        "put_oi": int(pe.get("totOI") or 0),
+        "call_volume": int(ce.get("totVol") or 0),
+        "put_volume": int(pe.get("totVol") or 0),
+    }
+
+
 def nse_live_option_chain(
     symbol: str, expiry_date: str = None, oi_mode: str = "full"
 ) -> pd.DataFrame:
@@ -629,10 +650,15 @@ def nse_live_option_chain(
 
     Returns:
         pd.DataFrame: A DataFrame containing the real-time option chain data.
+            ``df.attrs['totals']`` carries the exchange's published OI and
+            volume totals for the whole chain (see ``chain_totals``), and
+            ``df.attrs['timestamp']`` the feed's own time, so a caller that
+            keeps only some strikes still has figures for all of them.
 
     Example:
         >>> from nselib import derivatives
         >>> chain_df = derivatives.nse_live_option_chain(symbol='TCS', expiry_date='20-06-2023')
+        >>> chain_df.attrs['totals']['put_oi'] / chain_df.attrs['totals']['call_oi']
     """
     if expiry_date:
         exp_date = pd.to_datetime(expiry_date, format="%d-%m-%Y")
@@ -696,7 +722,10 @@ def nse_live_option_chain(
     columns = base_cols
     for prefix in ["CE", "PE"]:
         columns += [f"{prefix}_{c}" for c in side_cols + bid_ask]
-    return pd.DataFrame(rows, columns=columns)
+    data_df = pd.DataFrame(rows, columns=columns)
+    data_df.attrs["totals"] = chain_totals(payload)
+    data_df.attrs["timestamp"] = payload["records"].get("timestamp")
+    return data_df
 
 
 def fno_security_in_ban_period(trade_date: str) -> list:

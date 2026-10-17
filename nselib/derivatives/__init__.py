@@ -1,6 +1,7 @@
 from .derivative_data import (
     business_growth_fo_segment,
     category_turnover_fo,
+    chain_totals,
     daily_volatility,
     expiry_dates_future,
     expiry_dates_option_index,
@@ -18,6 +19,7 @@ from .derivative_data import (
 __all__ = [
     "business_growth_fo_segment",
     "category_turnover_fo",
+    "chain_totals",
     "daily_volatility",
     "expiry_dates_future",
     "expiry_dates_option_index",
