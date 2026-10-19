@@ -48,4 +48,4 @@ chain = derivatives.nse_live_option_chain(symbol="NIFTY")
 
 ## Git
 
-Separate sub-repo. Commit locally → push → `ssh algoserver "cd /home/abhi-trade/nx-trade/libs/nselib && git pull"`.
+Separate sub-repo. Commit locally → push → `ssh optiplex "cd ~/nx-trade/libs/nselib && git pull"`.
